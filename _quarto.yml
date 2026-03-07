@@ -1,0 +1,27 @@
+project:
+  type: book
+
+book:
+  title: "Apuntes sobre Modelización de Computación Predictiva"
+  author: "Carlos G"
+  date: "3/7/2026"
+  chapters:
+    - index.qmd
+    - intro-R.qmd
+    - intro-tidyverse.qmd
+    - sistemas-ecuaciones.qmd
+    - references.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+  pdf:
+    cover-image: cover.png
+    documentclass: scrreprt
+
+
+

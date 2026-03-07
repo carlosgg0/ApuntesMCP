@@ -1,0 +1,117 @@
+# Resolución de grandes sistemas de ecuaciones
+
+Este tema se centra en la resolución de grandes sistemas de ecuaciones
+**compatibles determinados**.
+
+## Ejemplo de la barra metálica
+
+Imaginemos una barra metálica de 1 metro, cuyo extremo izquierdo mantenemos a 
+$0ºC$ y el extremo derecho a $100ºC$. Queremos determinar la temperatura 
+*estacionaria* de toda la barra. 
+
+Sabiendo que:
+
+$$
+T_i = \frac{T_{i+1} + T_{i-1}}{2}
+$$
+
+donde $T_i$ es la temperatura en el i-ésimo punto de la barra, podemos obtener 
+un sistema de ecuaciones:
+
+$$
+T_{i-1} - 2 T_{i} + T_{i+1} = 0, \space \forall i
+$$
+
+## R para sistemas de ecuaciones
+
+### Creación de matrices en R:
+
+Nuestro objetivo es representar el siguiente sistema de ecuaciones:
+
+$$
+\begin{pmatrix}
+  1 & 2 & 3 \\
+  4 & 5 & 6 \\
+  1 & 2 & 4
+\end{pmatrix}
+\begin{pmatrix}
+  x \\
+  y \\
+  z
+\end{pmatrix}
+=
+\begin{pmatrix}
+  0 \\
+  0 \\
+  1
+\end{pmatrix}
+$$
+cuya notación matricial:
+
+$$
+Ax=b
+$$
+
+```{r}
+A <- matrix(
+  c(1, 2, 3,
+    4, 5, 6,
+    1, 2, 4),
+  ncol = 3, byrow = TRUE
+)
+
+b <- matrix(
+  c(0, 0, 1),
+  byrow=TRUE
+)
+
+# Método de R base
+res <- solve(A, b)
+```
+
+Podemos verificarlo mediante:
+
+```{r}
+A %*% res
+```
+
+Sin embargo, ¿Qué pasa cuando A no es regular o el sistema es **incompatible**?
+
+```{r}
+A_singular <- matrix(
+  c(1, 2, 3,
+    4, 5, 6,
+    1, 2, 3),
+  ncol = 3, byrow = TRUE
+)
+
+#solve(A_singular, b)
+```
+
+
+En R, podemos usar el paquete `Matrix` para obtener la descomposición $LU$:
+
+```{r}
+library(Matrix)
+
+lu_A <- lu(A)
+matrices_A <- expand(lu_A)
+matrices_A$L %*% matrices_A$U
+```
+
+Sabemos que $PA = LU$
+
+```{r}
+# 1. Construyo el sistema PA = LU
+nueva_A <- matrices_A$P %*% A
+nueva_b <- matrices_A$P %*% b
+
+# 2. Resuelvo L(Ux) = Pb
+# 2.1 Ly = Pb (siendo y = Ux)
+y <- forwardsolve(matrices_A$L, nueva_b)
+
+# 2.2 Ux = y
+x <- backsolve(matrices_A$U, y)
+```
+
+

@@ -1,0 +1,120 @@
+# El lenguaje de programación R
+
+```{r}
+# Asignaciones
+variable_nueva <- 10
+
+# Tipos de datos atómicos:
+# Numéricos:
+x <- pi
+a <- 1L
+b <- 1
+
+class(x)
+class(a)
+class(b)
+
+# Caracteres:
+cadena <- "Hola, 'mundo'"
+class(cadena)
+
+# Lógicos:
+bool <- TRUE
+not_bool <- FALSE
+
+# NA representa valor faltante / desconocido (NOT AVAILABLE):
+perdido <- NA
+class(perdido) # Lógica trivaluada
+class(NA_character_)
+
+
+
+# Vectores
+# función c() (concatenate)
+vector_numerico <- c(1, 2, 3)
+vector_caracter <- c("a", "b", 'c')
+
+vector_final <- c(vector_numerico, vector_caracter)
+class(vector_numerico) # "numeric"
+class(vector_final) # "character"
+
+# Todo en R es un vector 
+is.vector(cadena)
+is.vector(vector_final)
+
+length(cadena) # 1
+length(vector_final) # 6
+
+# R es 1-based.
+vector_final[2]
+vector_final[c(1, 3, 6)]
+vector_final[c(1, 3, 7)] # El séptimo elemento no existe (da NA)
+
+# Otra forma de construir vectores -> inicio:final
+6:3
+6:19
+
+# Función seq()
+seq(6, 19, by = 0.25)
+
+# Seleccionar elementos con vectores lógicos
+vector_final[c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE)]
+
+# La función which encuentra los "TRUE" dentro de un vector lógico
+cuales_verdadero <- which(c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE))
+vector_final[cuales_verdadero]
+
+# Reciclaje
+vector_final[c(TRUE, FALSE)] # El vector lógico se extiende T, F, T, F, ...
+vector_final[c(TRUE, FALSE)] # Posiciones impares
+vector_final[c(FALSE, TRUE)] # Posiciones pares
+
+
+# Condiciones lógicas para seleccionar elementos de un vector
+vector_grande <- runif(100, min = 0, max = 10)
+
+vector_grande < 5
+vector_grande[vector_grande < 5]
+vector_grande[vector_grande >= 7]
+vector_grande[vector_grande > 3 & vector_grande < 5]
+vector_grande[vector_grande <= 2 | vector_grande >= 5]
+
+
+# Las listas permiten tener elementos de distinto tipo atómico
+lista <- list(1, "a", NA, TRUE, pi, "hola")
+
+# Seleccionar elemento individual de una lista [[]]
+lista[[3]] # índice numérico
+lista[[4]]
+lista[[5]]
+
+# Seleccionar varios elementos de una lista: []
+nueva_lista <- lista[c(1, 3, 5)] # vectores lógicos o de índices, etc.
+
+# En las listas se puede poner nombre a los elementos
+lista2 <- list(primero = TRUE,
+               segundo = 5,
+               tercero = pi - 1,
+               cuarto = "NA")
+
+lista2[[1]]
+lista2[[3]]
+lista2[c(1, 3, 4)]
+
+lista2$tercero
+
+lista2[c("primero", "segundo")]
+lista2[["tercero"]]
+
+
+# Operaciones con vectores:
+# Operaciones componente a componente
+1:10 + 2
+1:10 / 2
+1:10 / 0
+
+1:5 / 2:12 # Recicla el vector más pequeño hasta tener el tamaño del mayor
+
+1:10 / 1:3 # Recicla el vector más pequeño hasta tener el tamaño del mayor
+```
+

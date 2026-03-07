@@ -1,0 +1,208 @@
+# La librería `tidyverse`
+
+**NOTA**: Todas las variables, datos, funciones y librerías deben cargarse o 
+crearse dentro del archivo Quarto.
+
+```{r}
+cadena <- "Hola"
+print(cadena)
+```
+
+## Pipes
+
+Un pipe es un operador que permite encadenar varias funciones, de forma que el
+resultado de una función se pasa como argumento a la siguiente función. 
+
+Son ampliamente usados en el ecosistema tidyverse, aunque no son exclusivos de
+este.
+
+```{r}
+log(exp(sin(cos(abs(1:10)))))
+```
+
+Es equivalente a:
+
+```{r}
+1:10 |>
+  abs() |>
+  cos() |>
+  sin() |>
+  exp() |>
+  log()
+```
+
+La librería se puede instalar mediante el comando `install.packages("tidyverse")`
+en la consola.
+
+```{r}
+#| warning: false
+#| message: false
+
+library(tidyverse)
+data(starwars)
+```
+
+## La función `select()`
+
+Selecciona columnas por nombre:
+
+```{r}
+# filosofía de tidyverse: primero datos y después las funciones
+starwars |>
+  select(name, height, mass, hair_color)
+
+# todas las columnas entre name y  hair_color (ambas incluidas)
+starwars |> 
+  select(name:hair_color)
+
+# con el signo - podemos excluir columnas
+starwars |> 
+  select(-mass)
+
+# expresiones regulares
+starwars |> 
+  select(starts_with("h"))
+
+starwars |> 
+  select(where(is.numeric))
+```
+
+## La función `filter()`
+
+Selecciona filas de la tabla que verifiquen una o más condiciones lógicas.
+
+Ejemplo: seleccionamos filas de humanos (y usamos select para que se vea la 
+columna `species` al principio):
+
+```{r}
+starwars |>
+  filter(species == "Human") |>
+  select(name, species, everything())
+```
+
+Ejemplo: Seleccionamos las filas correspondientes a humanos o a droides.
+
+```{r}
+starwars |>
+  filter(species == "Human" | species == "Droid") |>
+  select(name, species, everything())
+
+# Equivalente
+especies_admitidas <- c("Human", "Droid")
+starwars |> 
+  filter(species %in% especies_admitidas) |>
+  select(name, species, everything())
+
+```
+
+Ejemplo: Humanos con ojos azules.
+
+```{r}
+starwars |>
+  filter(species == "Human" & eye_color == "blue") |>
+  select(name, species, everything())
+```
+
+Lo usual es, después de filtrar, eliminar aquellas columnas que no aportan 
+información:
+
+```{r}
+humanos_ojos_azules <- starwars |>
+  filter(species == "Human" & eye_color == "blue") |>
+  select(-species, -eye_color)
+
+# Equivalente
+humanos_ojos_azules <- starwars |>
+  filter(
+    species == "Human",
+    eye_color == "blue"
+    ) |>
+  select(-species, -eye_color)
+
+humanos_ojos_azules
+```
+
+## La función `mutate()`
+
+Sirve para construir nuevas columnas a partir de las ya existentes.
+
+```{r}
+starwars |>
+  mutate(altura_en_metros = height / 100,
+    IMC = mass / altura_en_metros^2) |>
+  select(name, IMC, mass, height, altura_en_metros)
+```
+
+Ejercicio: Crear una nueva columna llamada "estado" que contenga "normal", 
+"sobrepeso" u "obeso", según los valores de IMC. PISTA: mirar la ayuda de las
+funciones `ifelse` y `case_when`:
+
+```{r}
+datos_limpios <- starwars |>
+  mutate(
+    IMC = mass / (height / 100) ^ 2,
+    estado = case_when(
+        IMC <= 30 ~ "normal", 
+        IMC <= 34 ~ "sobrepeso",
+        IMC > 34 ~ "obeso", 
+        .default = "desconocido"
+      ))
+
+datos_limpios
+```
+
+## La función `arange()`
+
+Sirve para reordenar (según los valores de una o varias columnas) las filas
+del dataset.
+
+Ejemplo: ordenar los datos recién calculados por la variable IMC, de menor a
+mayor:
+
+```{r}
+datos_limpios |>
+  arrange(desc(IMC))
+```
+
+Ejemplo: en el dataset original, ordenar los humanos por color de ojos y, para
+deshacer empates, por la altura, de mayor a menor:
+
+```{r}
+starwars |>
+  filter(species == "Human") |>
+  arrange(eye_color, desc(height))
+```
+
+## La función `summarise()`
+
+Para resúmenes estadísticos descriptivos.
+
+Ejemplo: peso y estatura medias en el dataset:
+
+```{r}
+# Con R base
+mean(starwars$mass, na.rm = TRUE)
+mean(starwars$height, na.rm = TRUE)
+
+# Con tidyverse
+starwars |>
+  summarise(
+    peso_medio = mean(mass, na.rm = TRUE),
+    altura_media = mean(height, na.rm = TRUE)
+  )
+```
+
+
+Ejemplo: peso y estatura medias en el dataset, por cada especie:
+
+```{r}
+starwars |>
+  group_by(species) |>
+  summarise(
+    peso_medio = mean(mass, na.rm = TRUE),
+    altura_media = mean(height, na.rm = TRUE),
+    numero_individuos = n() # número de filas de cada grupo
+  )
+```
+
+
