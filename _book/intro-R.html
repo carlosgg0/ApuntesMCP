@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-42f7f400dc395ef6d3cb4321b2b0217d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-925114cc2c32d7cc3351bac8f0668417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -160,7 +160,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./intro-tidyverse.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introducción a la librería <code>tidyverse</code></span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">La librería <code>tidyverse</code></span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -338,51 +338,52 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>vector_grande <span class="sc">&lt;</span> <span class="dv">5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  [1]  TRUE  TRUE  TRUE  TRUE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE  TRUE
- [13]  TRUE  TRUE FALSE  TRUE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
- [25] FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE
- [37] FALSE FALSE FALSE  TRUE FALSE FALSE  TRUE  TRUE FALSE FALSE FALSE FALSE
- [49] FALSE  TRUE  TRUE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
- [61]  TRUE  TRUE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE
- [73] FALSE  TRUE FALSE FALSE  TRUE  TRUE FALSE  TRUE  TRUE FALSE FALSE FALSE
- [85]  TRUE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE  TRUE  TRUE FALSE  TRUE
- [97]  TRUE FALSE  TRUE  TRUE</code></pre>
+<pre><code>  [1]  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE  TRUE FALSE FALSE FALSE FALSE
+ [13]  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE
+ [25] FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE  TRUE FALSE  TRUE
+ [37] FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE  TRUE FALSE  TRUE FALSE
+ [49] FALSE  TRUE FALSE FALSE  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE  TRUE
+ [61]  TRUE FALSE  TRUE  TRUE FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE
+ [73] FALSE FALSE FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE FALSE
+ [85] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+ [97] FALSE  TRUE FALSE FALSE</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&lt;</span> <span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 0.5953332 0.9939727 3.6739263 4.7260098 0.1925419 4.6521750 3.3206917
- [8] 2.3698492 4.6042034 3.4482476 1.8553876 4.9175012 3.7307263 1.7257942
-[15] 3.1315242 2.4579042 2.7569341 3.6179870 1.4247875 4.4501319 4.1117431
-[22] 3.1869011 2.1119474 0.6762150 0.5009369 0.7262938 1.7968494 4.6070788
-[29] 3.5550268 0.4724438 4.2161500 3.3728033 4.7910754 2.0094379 3.9916786
-[36] 1.8716266 1.3813822 3.5597443 2.9081949 3.3845112 1.1375333 0.6218995
-[43] 2.6157930 2.6950804 3.2539602 2.8063014 3.8519927 2.9149772</code></pre>
+<pre><code> [1] 0.6546658 0.5286427 3.0230703 0.4235753 1.6474105 0.4335857 2.6508223
+ [8] 4.0998532 0.4962261 0.6965579 0.1314603 0.8840302 3.7539814 3.4139449
+[15] 1.8267478 0.4872832 2.9650036 1.3524927 3.4881911 2.6090479 2.8171400
+[22] 1.9841888 3.9074012 1.6555255 1.7554737 3.7923541 1.8206118 1.4225467
+[29] 3.2513598 1.2101992 4.4142780 3.9250632 0.1933547 2.2905427 0.7893517
+[36] 2.0493616 4.5848374 1.4073464 2.3966955 0.3476984 4.1651539 3.9522293
+[43] 2.5001299 1.0155674 0.8594549 1.6695670 0.4388916 4.5662600</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&gt;=</span> <span class="dv">7</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 8.783169 9.887405 8.181984 8.175061 7.970023 9.376285 7.675413 9.209923
- [9] 8.208170 8.376185 9.054348 9.429971 8.036660 9.634653 9.947663 7.381053
-[17] 9.607547 8.093173 8.431773 8.875958 8.669779 7.139682 8.380463 9.663171
-[25] 8.675978 8.881210 9.562969 8.744360 8.483044</code></pre>
+<pre><code> [1] 7.385775 7.253397 8.206673 8.819087 8.291238 7.414077 8.795900 8.435093
+ [9] 7.805855 7.230981 9.782472 8.880692 9.253942 8.016675 7.900270 9.666376
+[17] 9.312186 9.969532 8.732289 9.927177 9.354411 7.867911 9.444716 9.985967
+[25] 8.004273 9.200146 8.173379 8.132666 8.512982</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&gt;</span> <span class="dv">3</span> <span class="sc">&amp;</span> vector_grande <span class="sc">&lt;</span> <span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 3.673926 4.726010 4.652175 3.320692 4.604203 3.448248 4.917501 3.730726
- [9] 3.131524 3.617987 4.450132 4.111743 3.186901 4.607079 3.555027 4.216150
-[17] 3.372803 4.791075 3.991679 3.559744 3.384511 3.253960 3.851993</code></pre>
+<pre><code> [1] 3.023070 4.099853 3.753981 3.413945 3.488191 3.907401 3.792354 3.251360
+ [9] 4.414278 3.925063 4.584837 4.165154 3.952229 4.566260</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&lt;=</span> <span class="dv">2</span> <span class="sc">|</span> vector_grande <span class="sc">&gt;=</span> <span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 0.5953332 0.9939727 5.5097315 8.7831685 0.1925419 9.8874054 8.1819837
- [8] 8.1750611 7.9700226 5.8434336 5.4209347 6.5100885 5.6777367 9.3762853
-[15] 6.0956950 5.7626650 7.6754130 6.3796334 9.2099227 5.1703261 1.8553876
-[22] 1.7257942 6.0453418 6.0546286 5.2679363 8.2081699 8.3761853 6.9741140
-[29] 9.0543481 9.4299705 1.4247875 8.0366599 6.2339444 6.5164742 5.5173018
-[36] 6.0271868 9.6346526 9.9476631 7.3810533 5.8068956 9.6075467 8.0931725
-[43] 8.4317731 0.6762150 0.5009369 0.7262938 1.7968494 6.2731129 0.4724438
-[50] 8.8759579 5.1636629 6.4414265 8.6697794 6.8162662 7.1396818 8.3804628
-[57] 1.8716266 9.6631707 8.6759782 5.9693025 1.3813822 8.8812100 1.1375333
-[64] 0.6218995 9.5629687 8.7443598 8.4830437</code></pre>
+<pre><code> [1] 0.6546658 0.5286427 5.8775348 6.5013887 0.4235753 6.4775013 1.6474105
+ [8] 7.3857750 7.2533969 8.2066727 8.8190865 0.4335857 8.2912378 0.4962261
+[15] 0.6965579 6.8139693 7.4140772 8.7959001 0.1314603 6.1756405 0.8840302
+[22] 8.4350933 1.8267478 0.4872832 7.8058548 7.2309809 1.3524927 5.0296059
+[29] 5.0055724 1.9841888 6.2027545 6.4438774 9.7824721 1.6555255 1.7554737
+[36] 8.8806919 5.9331900 6.5996179 1.8206118 9.2539420 8.0166749 1.4225467
+[43] 1.2101992 5.8082268 7.9002695 0.1933547 9.6663764 0.7893517 9.3121862
+[50] 1.4073464 9.9695318 0.3476984 6.2023028 5.5723930 5.3192068 6.4404925
+[57] 1.0155674 8.7322893 5.7988879 9.9271768 0.8594549 9.3544108 5.5908780
+[64] 7.8679113 9.4447163 9.9859667 1.6695670 8.0042731 9.2001463 5.7253788
+[71] 6.6587882 6.0537189 6.8537340 0.4388916 8.1733787 8.1326662 5.9796127
+[78] 8.5129823</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Las listas permiten tener elementos de distinto tipo atómico</span></span>
 <span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>lista <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="dv">1</span>, <span class="st">"a"</span>, <span class="cn">NA</span>, <span class="cn">TRUE</span>, pi, <span class="st">"hola"</span>)</span>
@@ -887,8 +888,8 @@ length</code></pre>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./intro-tidyverse.html" class="pagination-link" aria-label="Introducción a la librería `tidyverse`">
-        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introducción a la librería <code>tidyverse</code></span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./intro-tidyverse.html" class="pagination-link" aria-label="La librería `tidyverse`">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">La librería <code>tidyverse</code></span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

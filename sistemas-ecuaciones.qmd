@@ -112,6 +112,9 @@ y <- forwardsolve(matrices_A$L, nueva_b)
 
 # 2.2 Ux = y
 x <- backsolve(matrices_A$U, y)
+
+# Pequeño cambio de prueba
 ```
+
 
 
