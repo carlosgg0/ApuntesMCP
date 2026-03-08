@@ -168,5 +168,15 @@
     "crumbs": [
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>La librería `tidyverse`</span>"
     ]
+  },
+  {
+    "objectID": "sistemas-ecuaciones.html#espacios-vectoriales",
+    "href": "sistemas-ecuaciones.html#espacios-vectoriales",
+    "title": "3  Resolución de grandes sistemas de ecuaciones",
+    "section": "3.3 Espacios vectoriales",
+    "text": "3.3 Espacios vectoriales\nUn conjunto \\((V,+,\\cdot)\\) se dice que es un espacio vectorial si:\n\n\\(+:V \\times V \\rightarrow V\\) tal que \\((V,+)\\) es un grupo abeliano.\n\\(\\cdot : \\mathbb{K} \\times V \\rightarrow V\\) que verifica:\n\n\n\\(c(v+w) = cv + cw\\)\n\\((c+d)v = cv + dv\\)\n\\(c(dv) = (cd)v\\)\nElemento neutro: \\(1 \\in \\mathbb{K} \\space | \\space 1 \\cdot v = v\\)",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Resolución de grandes sistemas de ecuaciones</span>"
+    ]
   }
 ]
