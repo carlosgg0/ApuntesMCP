@@ -1,0 +1,75 @@
+---
+title: "practica1"
+author: "Carlos García"
+format: html
+---
+
+# Práctica 1 - Simulación de Red de Calor
+
+## Ejercicio 1
+
+Primeramente, importamos las librerías necesarias:
+
+```{r}
+library(Matrix)
+library(Rlinsolve)
+library(microbenchmark)
+```
+
+Definimos los datos necesarios para crear la matriz $A$:
+
+```{r}
+n <- 1000
+
+# Diagonales
+diag_principal <- rep(2, n)
+sub_diag <- rep(-1, n-1)
+super_diag <- rep(-1, n-1)
+
+# Posiciones (i,j)
+i <- c(1:n, 2:n, 1:(n-1))
+j <- c(1:n, 1:(n-1), 2:n)
+x <- c(diag_principal, sub_diag, super_diag)
+
+A <- sparseMatrix(i = i, j = j,x = x)
+```
+
+
+Creamos ahora el vector $b$:
+
+```{r}
+b <- c(rep(0, n-1), 100)
+```
+
+## Ejercicio 2
+
+A continuación, compararemos varios métodos de resolución mediante la
+función `microbenchmark::microbenchmark()`:
+
+```{r}
+# mbm <- microbenchmark(
+#   base = solve(A, b),
+#   cholesky = {
+#     R <- chol(A)
+#     y <- forwardsolve(R, b)
+#   },
+#   qr = {
+#     decomp_qr <- qr(A)
+#     x_qr <- qr.solve(decomp_qr, b)
+#   },
+#   jacobi = lsolve.jacobi(A, b),
+#   gauss_seidel = lsolve.gs(A, b),
+#   cg = lsolve.cg(A, b),
+#   times = 1,
+#   verbose = FALSE
+# )
+
+# No me compilaba, por eso lo he comentado
+
+# print(mbm, units = "ms")
+print("hello")
+```
+
+
+## Análisis de resultados
+
