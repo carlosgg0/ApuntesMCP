@@ -10,6 +10,7 @@ book:
     - intro-R.qmd
     - intro-tidyverse.qmd
     - sistemas-ecuaciones.qmd
+    - autovalores.qmd
     - references.qmd
 
 bibliography: references.bib

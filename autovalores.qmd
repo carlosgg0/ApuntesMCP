@@ -1,0 +1,203 @@
+# Autovalores, Autovectores y Descomposición Singular
+
+## Breve recordatorio
+
+La definición de autovalor $\lambda$ y autovector $v$ es la siguiente:
+
+$$
+Av = \lambda v
+$$
+
+Intuitivamente se puede entender como los espacios vectoriales cuya dirección
+no se ve afectada cuando se les aplica la transformación lineal $A$.
+
+Desarrollando la ecuación:
+
+$$
+(A-\lambda I)v = 0
+$$
+
+por lo que es necesario que $det(A-\lambda I) = 0$ para que existan soluciones.
+Ecuación con la que obtenemos $\lambda$.
+
+## El método de la potencia
+
+Dado un vector inicial aleatorio $b_0$:
+
+$$
+b_{k+1} = \frac{Ab_k}{\|Ab_k\|}
+$$
+
+Un ejemplo de ejecución se vería tal que así:
+
+$$
+b_0 \implies b_1=Ab_o \implies b_2=Ab_1 \implies \ldots \implies b_{k+1}=Ab_{k} 
+$$
+
+(dividiendo por la correspondiente norma).
+
+Esta serie de productos siempre converge al autovalor de mayor valor absoluto,
+denomidado **autovalor dominante**.
+
+### Pequeño experimento de clase
+
+Potencia de matrices:
+
+```{r}
+library(Matrix)
+library(expm)
+
+power_matrix <- function(A, k) {
+  res <- A
+  for (i in seq(k-1)) {
+    res <- res %*% A
+  }
+  return(res)
+}
+
+A <- matrix(c(1, 2, 2, 4), nrow = 2)
+power_matrix(A, 30)
+```
+
+Posible función que calcula el método de la potencia:
+
+```{r}
+power_method <- function(A, epsilon = 1e-6, max_iter = 1000) {
+  # 1. Vector inicial aleatorio (normalizado)
+  n <- nrow(A)
+  x <- rnorm(n)
+  x <- x / sqrt(sum(x^2))
+  
+  lambda_old <- 0
+  
+  for(i in 1:max_iter) {
+    # 2. Multiplicación (aprovecha la dispersión de A si es sparse)
+    x_new <- as.vector(A %*% x)
+    
+    # 3. Estimación del autovalor (Cociente de Rayleigh simple)
+    # Si x está normalizado, lambda es aproximadamente t(x) %*% A %*% x
+    # Aquí simplificamos usando la norma del nuevo vector antes de normalizar
+    lambda <- sqrt(sum(x_new^2)) 
+    
+    # Recuperar signo si es necesario (para autovalores reales)
+    # if(sum(x_new * x) < 0) lambda <- -lambda
+    
+    # 4. Normalización
+    x_new <- x_new / sqrt(sum(x_new^2))
+    
+    # 5. Convergencia
+    if(abs(lambda - lambda_old) < epsilon) {
+      return(list(
+        eigenvalue = lambda, 
+        eigenvector = x_new, 
+        iterations = i
+      ))
+    }
+    
+    x <- x_new
+    lambda_old <- lambda
+  }
+  warning("El método no convergió")
+  return(list(eigenvalue = lambda, eigenvector = x, iterations = max_iter))
+}
+
+power_method(A)
+```
+
+Usemos de nuevo el método para calcular los autovalores y autovectores 
+de la matriz de la práctica anterior.
+
+```{r}
+n <- 1000 
+
+# Diagonales
+diag_principal <- rep(2, n)
+sub_diag <- rep(-1, n-1)
+super_diag <- rep(-1, n-1)
+
+# Posiciones (i,j)
+i <- c(1:n, 2:n, 1:(n-1))
+j <- c(1:n, 1:(n-1), 2:n)
+x <- c(diag_principal, sub_diag, super_diag)
+
+A <- sparseMatrix(i = i, j = j,x = x)
+
+result <- power_method(A)
+
+result$eigenvalue
+result$iterations
+```
+
+
+## El algoritmo QR
+
+Mientras que el método de las potencias encuentra solo el autovalor dominante,
+el **algoritmo QR** encuentra todos los autovalores de una matriz (el espectro
+completo).
+
+```{r}
+qr_algo <- function(A, max_iter = 20, epsilon = 1e-6) {
+  A_k <- A
+  # Guardamos la evolución para visualizar (opcional)
+  historia <- numeric(max_iter)
+  
+  for(i in 1:max_iter) {
+    # 1. Descomposición QR: A = Q * R
+    descomp <- qr(A_k)
+    Q <- qr.Q(descomp)
+    R <- qr.R(descomp)
+    
+    # 2. Actualización: A_new = R * Q
+    A_new <- R %*% Q
+    
+    # Guardamos el valor de la esquina superior (para ver convergencia)
+    historia[i] <- A_new[1,1]
+    
+    # Cuando la diferencia sea despreciable nos salimos
+    if (max(abs(A_new - A_k)) < epsilon) {
+      break
+    }
+    
+    A_k = A_new
+  }
+  
+  return(list(matriz_final = A_k, 
+              autovalores = diag(A_k),
+              iteraciones = i))
+}
+
+M <- matrix(c(5, 2, 0,
+              2, 3, 1,
+              0, 1, 1), nrow = 3)
+qr_algo(M)
+```
+
+
+De nuevo, volvemos a probar el método sobre la matriz de la práctica anterior:
+
+```{r}
+n <- 10
+
+# Diagonales
+diag_principal <- rep(2, n)
+sub_diag <- rep(-1, n-1)
+super_diag <- rep(-1, n-1)
+
+# Posiciones (i,j)
+i <- c(1:n, 2:n, 1:(n-1))
+j <- c(1:n, 1:(n-1), 2:n)
+x <- c(diag_principal, sub_diag, super_diag)
+
+A <- sparseMatrix(i = i, j = j,x = x)
+qr_algo(A, max_iter = 100000)
+```
+
+
+### Consideraciones
+
+Si necesitamos el autovalor dominante es recomendable usar el método de la 
+potencia definido por nosotros; si necesitamos los $k$ primeros autovalores,
+usamos el paquete `rspectra`; y por último, si los queremos todos usamos el 
+método `eigen` del R base.
+
+
