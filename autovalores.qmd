@@ -200,4 +200,117 @@ potencia definido por nosotros; si necesitamos los $k$ primeros autovalores,
 usamos el paquete `rspectra`; y por último, si los queremos todos usamos el 
 método `eigen` del R base.
 
+### Ejemplo de Dinámica de poblaciones
+
+```{r}
+library(matlib)
+
+# Matriz de Leslie L:
+# Juveniles -> Pre-adultos -> Adultos
+L <- matrix(c(0,   0.5, 2.0,  # Fecundidad (solo adultos producen mucho)
+              0.1, 0,   0,    # 10% de juveniles sobrevive a pre-adultos
+              0,   0.5, 0),   # 50% de pre-adultos sobrevive a adultos
+            nrow = 3, byrow = TRUE)
+
+colnames(L) <- rownames(L) <- c("Jóvenes", "Pre-adultos", "Adultos") 
+
+# Autovalor dominante
+res <- matlib::powerMethod(L)
+
+res$vector / sum(res$vector)
+```
+
+
+## Descomposición en valores singulares
+
+```{r}
+# Creamos una matriz sencilla (no necesariamente cuadrada)
+A <- matrix(c(1, 2, 3, 
+              4, 5, 6), nrow = 2, byrow = TRUE)
+
+# Aplicamos SVD
+res_svd <- svd(A)
+
+# Mostramos los componentes
+# Valores singulares (diagonal de Sigma)
+print(res_svd$d)
+```
+
+```{r}
+res_svd$v %*% t(res_svd$v)
+```
+
+
+```{r}
+# Reconstrucción de A = U Σ V^t
+res_svd$u %*% diag(res_svd$d) %*% t(res_svd$v)
+```
+
+```{r}
+# Aproximación de Rango 1 (usando solo el primer valor singular)
+A_k1 <- res_svd$u[, 1, drop = FALSE] %*% (res_svd$d[1]) %*% t(res_svd$v[, 1, drop = FALSE])
+
+# Comparamos ambasmatrices
+print(A_k1)
+print(A)
+
+# La constante de proporcionalidad entre la fila 1 y la fila 2
+# y la fila 2 es el valor de coef (si es único!!)
+A_k1[2, ] / A_k1[1, ]
+```
+
+### Ejemplo práctico: Compresión de Imagen (Matriz)
+
+```{r}
+# 1. Matriz original
+V <- volcano
+svd_volcano <- svd(V)
+
+# Función para aproximar
+aproximar <- function(res_svd, k) {
+  res_svd$u[, 1:k] %*% diag(res_svd$d[1:k]) %*% t(res_svd$v[, 1:k])
+}
+
+# 2. Visualización
+par(mfrow = c(1, 4), mar = c(1, 1, 2, 1))
+image(V, main = "Original (Rango 61)", axes = FALSE, col = terrain.colors(100))
+image(aproximar(svd_volcano, 2), main = "k = 2", axes = FALSE, col = terrain.colors(100))
+image(aproximar(svd_volcano, 5), main = "k = 5", axes = FALSE, col = terrain.colors(100))
+image(aproximar(svd_volcano, 15), main = "k = 15", axes = FALSE, col = terrain.colors(100))
+```
+
+
+```{r}
+res <- svd(A)
+
+# A+ = V* (1/D) * Ut
+D_inv <- diag(1/res$d)
+
+A_plus <- res$v %*% D_inv %*% t(res$u)
+
+A_plus
+A %*% A_plus #pseudo-inversa
+```
+
+Otro ejemplo:
+
+```{r}
+A <- matrix(c(1, 2, 3,
+              4, 5, 6,
+              1, 2, 4), ncol = 3, byrow = TRUE)
+
+res <- svd(A)
+# A+ = V* (1/D) * Ut
+D_inv <- diag(1/res$d)
+
+A_plus <- res$v %*% D_inv %*% t(res$u)
+A_plus
+```
+
+Esta coincide con la inversa que devuelve el método `solve`:
+
+```{r}
+solve(A) # solve(A) devuelve la inversa de A
+```
+
 
