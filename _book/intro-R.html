@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-42f7f400dc395ef6d3cb4321b2b0217d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-925114cc2c32d7cc3351bac8f0668417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -167,6 +167,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./sistemas-ecuaciones.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Resolución de grandes sistemas de ecuaciones</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autovalores.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autovalores, Autovectores y Descomposición Singular</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -338,56 +344,52 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>vector_grande <span class="sc">&lt;</span> <span class="dv">5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  [1] FALSE  TRUE FALSE FALSE FALSE  TRUE FALSE FALSE  TRUE  TRUE FALSE FALSE
- [13] FALSE  TRUE FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE FALSE
- [25] FALSE  TRUE FALSE  TRUE FALSE FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
- [37]  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE FALSE  TRUE  TRUE FALSE  TRUE
- [49]  TRUE FALSE  TRUE FALSE  TRUE FALSE FALSE  TRUE FALSE FALSE  TRUE  TRUE
- [61] FALSE FALSE FALSE  TRUE FALSE FALSE  TRUE  TRUE FALSE  TRUE FALSE  TRUE
- [73]  TRUE  TRUE FALSE  TRUE FALSE  TRUE FALSE  TRUE FALSE  TRUE FALSE  TRUE
- [85] FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE
- [97] FALSE FALSE FALSE  TRUE</code></pre>
+<pre><code>  [1]  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE  TRUE FALSE FALSE FALSE FALSE
+ [13]  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE
+ [25] FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE  TRUE FALSE  TRUE
+ [37] FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE  TRUE FALSE  TRUE FALSE
+ [49] FALSE  TRUE FALSE FALSE  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE  TRUE
+ [61]  TRUE FALSE  TRUE  TRUE FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE
+ [73] FALSE FALSE FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE FALSE
+ [85] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+ [97] FALSE  TRUE FALSE FALSE</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&lt;</span> <span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 4.04861799 1.43496161 4.29925038 0.70261012 0.14420785 3.58654923
- [7] 3.25173025 1.03044682 0.35544850 2.67784473 4.10623499 4.76546324
-[13] 3.16401680 1.36129853 1.85916496 4.48828574 4.58553755 4.88545119
-[19] 0.66311326 2.00040714 2.48176030 0.69704788 2.75707270 4.11341167
-[25] 2.87770139 0.75315580 4.52379273 1.10033126 1.41246813 0.73133910
-[31] 1.39061896 0.99437499 1.07088321 4.15520128 0.22834564 1.03799974
-[37] 0.55354299 0.99640313 3.54093884 2.44080427 0.55744453 1.08239099
-[43] 2.29432665 2.70823623 3.70413189 3.60329458 1.95817861 4.84305664
-[49] 1.43546448 0.05124616 1.85582219 4.01924898</code></pre>
+<pre><code> [1] 0.6546658 0.5286427 3.0230703 0.4235753 1.6474105 0.4335857 2.6508223
+ [8] 4.0998532 0.4962261 0.6965579 0.1314603 0.8840302 3.7539814 3.4139449
+[15] 1.8267478 0.4872832 2.9650036 1.3524927 3.4881911 2.6090479 2.8171400
+[22] 1.9841888 3.9074012 1.6555255 1.7554737 3.7923541 1.8206118 1.4225467
+[29] 3.2513598 1.2101992 4.4142780 3.9250632 0.1933547 2.2905427 0.7893517
+[36] 2.0493616 4.5848374 1.4073464 2.3966955 0.3476984 4.1651539 3.9522293
+[43] 2.5001299 1.0155674 0.8594549 1.6695670 0.4388916 4.5662600</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&gt;=</span> <span class="dv">7</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 8.708076 7.812865 7.128529 9.102269 7.901739 8.987749 9.488128 9.210008
- [9] 8.052836 9.490307 9.775026 9.699157 8.144053 7.398387 9.636413 7.632808
-[17] 7.073866 7.920939 7.446691 8.859025 9.069484 8.650761 7.978632 7.382204
-[25] 9.856908 7.079084</code></pre>
+<pre><code> [1] 7.385775 7.253397 8.206673 8.819087 8.291238 7.414077 8.795900 8.435093
+ [9] 7.805855 7.230981 9.782472 8.880692 9.253942 8.016675 7.900270 9.666376
+[17] 9.312186 9.969532 8.732289 9.927177 9.354411 7.867911 9.444716 9.985967
+[25] 8.004273 9.200146 8.173379 8.132666 8.512982</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&gt;</span> <span class="dv">3</span> <span class="sc">&amp;</span> vector_grande <span class="sc">&lt;</span> <span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 4.048618 4.299250 3.586549 3.251730 4.106235 4.765463 3.164017 4.488286
- [9] 4.585538 4.885451 4.113412 4.523793 4.155201 3.540939 3.704132 3.603295
-[17] 4.843057 4.019249</code></pre>
+<pre><code> [1] 3.023070 4.099853 3.753981 3.413945 3.488191 3.907401 3.792354 3.251360
+ [9] 4.414278 3.925063 4.584837 4.165154 3.952229 4.566260</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>vector_grande[vector_grande <span class="sc">&lt;=</span> <span class="dv">2</span> <span class="sc">|</span> vector_grande <span class="sc">&gt;=</span> <span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 5.86793770 6.87997762 8.70807615 7.81286505 1.43496161 6.94851081
- [7] 7.12852879 0.70261012 9.10226947 6.06592646 7.90173915 0.14420785
-[13] 6.04909970 1.03044682 0.35544850 8.98774900 9.48812834 1.36129853
-[19] 9.21000823 1.85916496 8.05283586 9.49030731 0.66311326 0.69704788
-[25] 6.33238616 5.18271056 6.41153721 9.77502580 9.69915664 0.75315580
-[31] 8.14405336 1.10033126 7.39838739 1.41246813 6.37269759 0.73133910
-[37] 6.49334277 5.55609752 1.39061896 6.64103305 6.83769558 0.99437499
-[43] 1.07088321 5.60849375 9.63641325 7.63280821 7.07386582 7.92093944
-[49] 0.22834564 1.03799974 6.81351454 0.55354299 5.66451245 0.99640313
-[55] 7.44669107 0.55744453 5.30699919 1.08239099 8.85902469 6.20683431
-[61] 9.06948426 5.98337932 1.95817861 1.43546448 8.65076051 7.97863157
-[67] 7.38220447 5.14129271 9.85690828 0.05124616 1.85582219 5.26220382
-[73] 7.07908398 5.69838956</code></pre>
+<pre><code> [1] 0.6546658 0.5286427 5.8775348 6.5013887 0.4235753 6.4775013 1.6474105
+ [8] 7.3857750 7.2533969 8.2066727 8.8190865 0.4335857 8.2912378 0.4962261
+[15] 0.6965579 6.8139693 7.4140772 8.7959001 0.1314603 6.1756405 0.8840302
+[22] 8.4350933 1.8267478 0.4872832 7.8058548 7.2309809 1.3524927 5.0296059
+[29] 5.0055724 1.9841888 6.2027545 6.4438774 9.7824721 1.6555255 1.7554737
+[36] 8.8806919 5.9331900 6.5996179 1.8206118 9.2539420 8.0166749 1.4225467
+[43] 1.2101992 5.8082268 7.9002695 0.1933547 9.6663764 0.7893517 9.3121862
+[50] 1.4073464 9.9695318 0.3476984 6.2023028 5.5723930 5.3192068 6.4404925
+[57] 1.0155674 8.7322893 5.7988879 9.9271768 0.8594549 9.3544108 5.5908780
+[64] 7.8679113 9.4447163 9.9859667 1.6695670 8.0042731 9.2001463 5.7253788
+[71] 6.6587882 6.0537189 6.8537340 0.4388916 8.1733787 8.1326662 5.9796127
+[78] 8.5129823</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Las listas permiten tener elementos de distinto tipo atómico</span></span>
 <span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>lista <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="dv">1</span>, <span class="st">"a"</span>, <span class="cn">NA</span>, <span class="cn">TRUE</span>, pi, <span class="st">"hola"</span>)</span>

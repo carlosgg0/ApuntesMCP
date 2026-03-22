@@ -47,27 +47,28 @@ A continuación, compararemos varios métodos de resolución mediante la
 función `microbenchmark::microbenchmark()`:
 
 ```{r}
-# mbm <- microbenchmark(
-#   base = solve(A, b),
-#   cholesky = {
-#     R <- chol(A)
-#     y <- forwardsolve(R, b)
-#   },
-#   qr = {
-#     decomp_qr <- qr(A)
-#     x_qr <- qr.solve(decomp_qr, b)
-#   },
-#   jacobi = lsolve.jacobi(A, b),
-#   gauss_seidel = lsolve.gs(A, b),
-#   cg = lsolve.cg(A, b),
-#   times = 1,
-#   verbose = FALSE
-# )
+#| message: false
+#| warning: false
 
-# No me compilaba, por eso lo he comentado
+mbm <- microbenchmark(
+  base = solve(A, b),
+  cholesky = {
+    R <- chol(A)
+    y <- forwardsolve(t(R), b)
+    backsolve(R, y)
+  },
+  qr = {
+    decomp_qr <- qr(as.matrix(A))
+    qr.solve(decomp_qr, b)
+  },
+  jacobi = lsolve.jacobi(A, b),
+  gauss_seidel = lsolve.gs(A, b),
+  cg = lsolve.cg(A, b),
+  times = 10,
+  verbose = FALSE
+)
 
-# print(mbm, units = "ms")
-print("hello")
+print(mbm, units = "ms")
 ```
 
 
