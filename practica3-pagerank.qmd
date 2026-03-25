@@ -1,0 +1,121 @@
+---
+title: "Práctica 3"
+author: "Carlos García Guzmán"
+format: html
+---
+
+# PageRank
+
+## Ejercicio 4.1
+
+Construimos la matriz de transición $P$:
+
+```{r}
+n <- 3
+P <- matrix(c(0.7, 0.1, 0.1,
+              0.2, 0.8, 0.1,
+              0.1, 0.1, 0.8), nrow = n, byrow = TRUE)
+P
+```
+
+Comprobamos que es estocástica por columnas (todas sumen 1):
+
+```{r}
+colSums(P)
+```
+
+Ahora encontraremos el autovector asociado al autovalor $\lambda = 1$ y 
+lo normalizaremos:
+
+```{r}
+library(matlib)
+eigen <- matlib::powerMethod(P)
+
+eigen$value
+
+auto_norm <- eigen$vector / sum(eigen$vector)
+auto_norm
+```
+
+La cuota de mercado de cada marca a largo plazo viene dado por el autovector 
+recién obtenido:
+
+```{r}
+rownames(auto_norm) <- c("A", "B", "C")
+auto_norm
+```
+
+A presentará una cuota de mercado del 25%, B del 42% y C del 33%.
+
+Ahora podemos verificar el resultado elevando la matriz $P$ a una potencia 
+elevada:
+
+```{r}
+#| warning: false
+
+library(expm)
+P %^% 50
+```
+
+Tal y como era de esperar las columnas de la matriz han convergido al resultado
+esperado.
+
+## Ejercicio 4.2
+
+Para dibujar el grafo, se hará uso del paquete `igraph`, a partir de la 
+matriz de adyacencia $M$:
+
+```{r}
+#| warning: false
+#| message: false
+library(igraph)
+n <- 4
+A <- matrix(c(0, 0, 1, 0,
+              1, 0, 0, 0,
+              1, 1, 0, 1,
+              0, 0, 0, 0), nrow = 4, byrow = TRUE)
+rownames(A) <- colnames(A) <- c("A", "B", "C", "D")
+
+# Para trabajar con igraph, debemos usar la traspuesta de M
+g <- graph_from_adjacency_matrix(t(A), weighted = TRUE, mode = "directed")
+
+plot(g)
+```
+
+En este caso en concreto, todos los investigadores citan al menos a una persona.
+Por lo que no se produce ningún "callejón sin salida".
+
+
+Ahora calcularemos la matriz $G$ de google usando el factor estándar de 
+amortiguación $d=0.85$, teniendo en cuenta la siguiente fórmula:
+
+$$G = dM + (1-d)\frac{1}{n}J$$
+
+```{r}
+d <- 0.85
+
+M <- scale(A, 
+           center = FALSE, 
+           scale = colSums(A))
+
+J <- matrix(1, nrow = n, ncol = n)
+
+G <- d * M + (1 - d) * (1/n) * J
+
+G
+```
+
+Para obtener el investigador más influyente, basta con obtener el autovector
+de la matriz $G$:
+
+```{r}
+res <- powerMethod(G)
+
+pr_scores <- res$vector / sum(res$vector)
+pr_scores
+```
+
+Según nuestro modelo, el investigador más influyente es C, lo cual coincide con
+el resultado esperado, ya que C ha sido el más citado (tiene 3 citas), lo cual
+se puede comprobar fácilmente en el grafo anteriormente dibujado.
+

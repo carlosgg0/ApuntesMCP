@@ -11,6 +11,7 @@ format: html
 Primeramente, importamos las librerías necesarias:
 
 ```{r}
+#| message: false
 library(Matrix)
 library(Rlinsolve)
 library(microbenchmark)
@@ -34,7 +35,6 @@ x <- c(diag_principal, sub_diag, super_diag)
 A <- sparseMatrix(i = i, j = j,x = x)
 ```
 
-
 Creamos ahora el vector $b$:
 
 ```{r}
@@ -51,7 +51,7 @@ función `microbenchmark::microbenchmark()`:
 #| warning: false
 
 mbm <- microbenchmark(
-  base = solve(A, b),
+  base = base::solve(A, b),
   cholesky = {
     R <- chol(A)
     y <- forwardsolve(t(R), b)
@@ -61,16 +61,45 @@ mbm <- microbenchmark(
     decomp_qr <- qr(as.matrix(A))
     qr.solve(decomp_qr, b)
   },
-  jacobi = lsolve.jacobi(A, b),
+  jacobi = lsolve.jacobi(A, b, maxiter = 1000000),
   gauss_seidel = lsolve.gs(A, b),
   cg = lsolve.cg(A, b),
-  times = 10,
+  times = 5,
   verbose = FALSE
 )
 
-print(mbm, units = "ms")
+
+print(mbm, unit = "ms")
 ```
 
 
 ## Análisis de resultados
+
+$A$ es de diagonal dominante. Por tanto, el método de Jacobi converge a la 
+única solución del sistema. Sin embargo, realizando una serie de pruebas, 
+he debido aumentar el número máximo de iteraciones para que llegase a una 
+solución más próxima a la real (comparada con el solver de R-base). 
+
+Para comprobar que los métodos de Gauss-Seidel y del gradiente conjugado también
+converjan es necesario que $A$ sea simétrica y definida positiva:
+
+```{r}
+isSymmetric(A)
+```
+
+Un criterio para que una matriz sea definida positiva es que todos sus 
+autovalores sean positivos:
+
+```{r}
+ev <- eigen(A)$values
+all(ev > 0)
+```
+
+El método más rápido fue el de la descomposición cholesky, probablemente debido
+a la implementación interna del algoritmo y a que trabaja con la matriz 
+optimizada que hemos definido.
+
+Por último, en el caso de $n = 100000$ el método `qr` que usa `as.matrix()`,
+podría fallar debido al elevadísimo consumo de memoria que conlleva el uso de
+matrices no optimizadas.
 

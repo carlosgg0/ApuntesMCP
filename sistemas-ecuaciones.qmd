@@ -295,7 +295,7 @@ $$
 \end{cases}
 $$
 
-Que expresado de forma matricial:
+Que expresado de forma matricial
 
 $$
 \begin{pmatrix}
@@ -315,8 +315,10 @@ $$
 \begin{pmatrix}
   3 \\
   -4
-\end{pmatrix} \\
+\end{pmatrix}
+$$
 
+$$
 \vec{x}^{(k+1)} = M \vec{x}^{(k)} + C 
 $$
 

@@ -1,0 +1,159 @@
+---
+title: "Práctica 2"
+author: "Carlos García Guzmán"
+format: html
+---
+# Autovalores, Autovectores y Descomposición Singular
+
+## Ejercicio 3.4
+
+Primeramente, definimos la matriz de Leslie para este sistema:
+
+```{r}
+L <- matrix(c(0, 1, 2,
+              0.3, 0, 0,
+              0, 0.5, 0), byrow = TRUE, nrow = 3)
+L
+```
+
+Si queremos saber cuántos individuos habrá en cada categoría después de 10 años
+debemos aplicar la fórmula:
+
+$$n_{10} = L^{10} n_0$$
+
+```{r}
+#| warning: false
+
+# Vector de población inicial
+n0 <- c(100, 100, 100)
+
+
+library(expm)
+n10 <- (L %^% 10) %*% n0
+n10
+```
+
+Como se puede observar, habrá cerca de 32 juveniles, 12 sub-adultos y 7 adultos.
+
+A continuación, para computar el autovalor dominante, haremos uso del método de
+la potencia:
+
+```{r}
+power_method <- function(A, epsilon = 1e-6, max_iter = 1000) {
+  # 1. Vector inicial aleatorio (normalizado)
+  n <- nrow(A)
+  x <- rnorm(n)
+  x <- x / sqrt(sum(x^2))
+  
+  lambda_old <- 0
+  
+  for(i in 1:max_iter) {
+    # 2. Multiplicación (aprovecha la dispersión de A si es sparse)
+    x_new <- as.vector(A %*% x)
+    
+    # 3. Estimación del autovalor (Cociente de Rayleigh simple)
+    # Si x está normalizado, lambda es aproximadamente t(x) %*% A %*% x
+    # Aquí simplificamos usando la norma del nuevo vector antes de normalizar
+    lambda <- sqrt(sum(x_new^2)) 
+    
+    # Recuperar signo si es necesario (para autovalores reales)
+    # if(sum(x_new * x) < 0) lambda <- -lambda
+    
+    # 4. Normalización
+    x_new <- x_new / sqrt(sum(x_new^2))
+    
+    # 5. Convergencia
+    if(abs(lambda - lambda_old) < epsilon) {
+      return(list(
+        eigenvalue = lambda, 
+        eigenvector = x_new, 
+        iterations = i
+      ))
+    }
+    
+    x <- x_new
+    lambda_old <- lambda
+  }
+  warning("El método no convergió")
+  return(list(eigenvalue = lambda, eigenvector = x, iterations = max_iter))
+}
+
+eigen <- power_method(L)
+eigen
+```
+
+Como se puede ver, el algoritmo converge al autovalor
+$\lambda=0.81686 < 1$, por tanto la población tiende a la extinción, lo cual
+concuerda con los resultados anteriores.
+
+La distribución estable por edades viene dada por el autovector asociado al 
+autovalor dominante, indicandonos que a largo plazo, la proporción de individuos
+en cada etapa se mantendrá constante según las componentes de ese vector:
+
+```{r}
+v_estable <- eigen$eigenvector
+v_estable <- v_estable / sum(v_estable)
+names(v_estable) <- c("Juveniles", "Sub-adultos", "Adultos")
+v_estable
+```
+
+Estos valores indican que la población total estará conformada por un 63% de 
+individuos juveniles, un 23% sub-adultos y un 14% de adultos. Lo cuál además,
+también coincide con la población que calculamos a los diez años:
+
+$$32 / (32 + 12 + 7) = 0.627$$
+$$12 / (32 + 12 + 7) = 0.235$$
+$$7 / (32 + 12 + 7) = 0.137$$
+
+## Ejercicio 3.5
+
+Creamos la matriz A:
+
+```{r}
+n <- 50
+i <- j <- 1:n
+A <- outer(i, j, "+")
+```
+
+Le sumamos ruido:
+
+```{r}
+A_ruido <- A + matrix(rnorm(2500, sd = 5), 50, 50)
+```
+
+Calculamos SVD:
+
+```{r}
+svd_res <- svd(A_ruido)
+plot(svd_res$d)
+```
+
+Cómo se puede ver, hay 2 valores singulares que destacan sobre el "suelo" del
+ruido (los dos primeros, puesto que $\sigma_1 \ge \dots \ge \sigma_n \ge 0$).
+
+
+Para reconstruir la matriz a partir de los dos primeros valores singulares, 
+utilizaremos la siguiente fórmula:
+
+$$A = UDV^T$$
+
+En este caso, debido a que estamos usando los 2 primeros valores singulares,
+según el teorema de Eckart-Young, estamos obteniendo la mejor aproximación 
+de rango 2 de $A$.
+
+```{r}
+A_aprox <- svd_res$u[, 1:2] %*% diag(svd_res$d[1:2]) %*% t(svd_res$v[, 1:2])
+```
+
+
+Ahora calcularemos el error absoluto promedio tanto de la matriz ruidosa como de
+la aproximada con respecto a la matriz original:
+
+```{r}
+mean(abs(A - A_ruido))
+mean(abs(A_aprox - A))
+```
+
+Podemos observar, que gracias a la aproximación hemos disminuido el valor
+promedio absoluto del error de las matrices, consiguiendo así una disminución
+del ruido de la señal.
