@@ -11,6 +11,7 @@ book:
     - intro-tidyverse.qmd
     - sistemas-ecuaciones.qmd
     - autovalores.qmd
+    - analisis-pca.qmd
     - references.qmd
 
 bibliography: references.bib

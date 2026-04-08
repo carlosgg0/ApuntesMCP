@@ -1,0 +1,62 @@
+# Análisis de Componentes Principales (PCA)
+
+Vamos a analizar el dataset `USArrests`, que contiene estadísticas de arrestos
+por cada 100,000 residentes (asalto, asesinato y violación) en cada uno de los
+50 estados de EEUU en 1973, junto con el porcentaje de población urbana.
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(factoextra)
+library(patchwork)
+library(corrplot)
+```
+
+Hagamos un gráfico de dispersión inicial:
+
+```{r}
+plot(USArrests$UrbanPop, USArrests$Murder)
+```
+
+
+Podemos hacer un análisis de correlación:
+
+```{r}
+cor(USArrests) |>
+  corrplot(method = "number", type = "upper")
+```
+
+
+Debemos normalizar las variables puesto que la escala de la variable `Assault`
+es mucho mayor que las demás:
+
+```{r}
+# Z-score
+datos <- scale(USArrests,
+               center = TRUE, # Resta la media
+               scale = TRUE) # Divide por la desviación típica
+
+colnames(datos) <- colnames(USArrests)
+
+plot(datos[, 3], datos[, 1])
+```
+
+Si comparamos con el primer gráfico de dispersión, es fácil ver que son
+exactamente iguales.
+
+Realizamos el PCA y evaluamos cuánta información retenemos:
+
+```{r}
+acp <- prcomp(USArrests, center = TRUE, scale = TRUE)
+
+fviz_eig(acp, addlabels = TRUE, ylim = c(0, 70), title = "Scree Plot")
+
+fviz_pca_var(acp, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE, title = "Variables y sus contribuciones")
+```
+
+
+
