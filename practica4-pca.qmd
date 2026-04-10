@@ -1,0 +1,33 @@
+---
+title: "practica1"
+author: "Carlos García"
+format: html
+---
+# Análisis de Componentes Principales (PCA)
+
+## Ejercicio 5.1
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(factoextra)
+library(patchwork)
+library(corrplot)
+```
+
+Dibujamos el biplot de `USArrests`:
+
+```{r}
+acp <- prcomp(USArrests, center = TRUE, scale = TRUE)
+fviz_pca_biplot(acp, repel = TRUE,
+               col.var = "#2E9FDF", col.ind = "#696969",
+               title = "Biplot de arrestos en EEUU")
+```
+
+```{r}
+
+```
+
+
