@@ -1,11 +1,12 @@
 ---
-title: "practica1"
+title: "Práctica 4"
 author: "Carlos García"
 format: html
 ---
 # Análisis de Componentes Principales (PCA)
 
-## Ejercicio 5.1
+A lo largo de esta práctica se trabajará con el dataset `wine`, que se 
+encuentra en el paquete `HDclassif`:
 
 ```{r}
 #| message: false
@@ -15,19 +16,98 @@ library(tidyverse)
 library(factoextra)
 library(patchwork)
 library(corrplot)
+library(HDclassif)
 ```
 
-Dibujamos el biplot de `USArrests`:
+## Versión Rápida
+
+### Ejercicio 4
+
+Cargamos el dataset y mostremos sus 5 primeras filas:
 
 ```{r}
-acp <- prcomp(USArrests, center = TRUE, scale = TRUE)
-fviz_pca_biplot(acp, repel = TRUE,
-               col.var = "#2E9FDF", col.ind = "#696969",
-               title = "Biplot de arrestos en EEUU")
+data(wine)
+wine_data <- wine[, -1]
+print(head(wine_data, n = 5)) 
+```
+
+La función `summary()` nos permite calcular una serie de estadísticas
+de forma sencilla:
+
+```{r}
+summary(wine_data)
 ```
 
 ```{r}
-
+boxplot(wine_data,
+        main = "Distribución de variables",
+        cex.axis = 0.8)
 ```
 
+Es fácil observar que V13 (Proline) presenta una escala absurdamente 
+desproporcionada al resto de variables, por lo que para que PCA funcione
+correctamente es obligatorio estandarizar.
 
+### Ejercicio 5
+
+Ahora realizamos el PCA sobre los datos estandarizados:
+
+```{r}
+pca_wine <- prcomp(wine_data, scale = TRUE)
+```
+
+Para ver cuánta varianza explican las dos primeras componentes podemos
+acceder al elemento `pca_wine$sdev`, ya que `pca_wine$sdev^2` representa
+la varianza explicada por cada componente:
+
+```{r}
+pca_wine$sdev^2
+```
+
+Para entenderlo mejor podemos obtener la proporción de varianza explicada:
+
+```{r}
+prop_varianza <- pca_wine$sdev^2 / sum(pca_wine$sdev^2)
+prop_varianza
+
+# sum(prop_varianza) == 1
+```
+
+Se puede ver que las 2 primeras componentes explicarían un porcentaje
+del 55%:
+
+```{r}
+prop_varianza[1] + prop_varianza[2]
+```
+
+Dibujemos ahora el *Scree Plot*:
+
+```{r}
+fviz_eig(pca_wine, addlabels = TRUE, ylim = c(0, 70), title = "Scree Plot")
+```
+
+Para retener al menos el 80% de la información original deberíamos
+
+
+### Ejercicio 6
+
+La matriz `rotation` es la siguiente:
+
+```{r}
+pca_wine$rotation
+```
+
+Podemos encontrar las 3 variables que más contribuyen a la PC1:
+
+```{r}
+sort(abs(pca_wine$rotation[, 1]), decreasing = TRUE)[1:3] 
+```
+
+En este caso son V7, V6 y V12 (en ese orden).
+
+Esto nos dice que, la **primera componente** del análisis intenta medir
+mayoritariamente la cantidad de dichas variables:
+
+- V7 (Flavanoids)
+- V6 (Total phenols)
+- V12 (OD280/OD315 of diluted wines)
