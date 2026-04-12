@@ -1,7 +1,7 @@
 ---
 title: "Práctica 4"
 author: "Carlos García"
-format: html
+format: pdf
 ---
 # Análisis de Componentes Principales (PCA)
 
@@ -23,7 +23,7 @@ library(HDclassif)
 
 ### Ejercicio 4
 
-Cargamos el dataset y mostremos sus 5 primeras filas:
+Cargamos el dataset y mostramos sus 5 primeras filas:
 
 ```{r}
 data(wine)
@@ -31,12 +31,15 @@ wine_data <- wine[, -1]
 print(head(wine_data, n = 5)) 
 ```
 
-La función `summary()` nos permite calcular una serie de estadísticas
-de forma sencilla:
+La función `summary()` nos permite calcular una serie de estadísticas 
+de forma sencilla para cada variable:
 
 ```{r}
 summary(wine_data)
 ```
+
+Un gráfico *boxplot* nos proporciona una forma rápida de visualizar si las 
+escalas de las variables son similares:
 
 ```{r}
 boxplot(wine_data,
@@ -47,6 +50,16 @@ boxplot(wine_data,
 Es fácil observar que V13 (Proline) presenta una escala absurdamente 
 desproporcionada al resto de variables, por lo que para que PCA funcione
 correctamente es obligatorio estandarizar.
+
+```{r}
+# wine_data_norm <- scale(wine_data, center = TRUE, scale = TRUE)
+wine_data_norm <- data.frame(sapply(wine_data, function(x) {(x - mean(x)) / sd(x)}))
+boxplot(wine_data_norm,
+        main = "Distribución de variables normalizadas",
+        cex.axis = 0.8)
+
+```
+
 
 ### Ejercicio 5
 
@@ -74,7 +87,7 @@ prop_varianza
 ```
 
 Se puede ver que las 2 primeras componentes explicarían un porcentaje
-del 55%:
+del 55.4%:
 
 ```{r}
 prop_varianza[1] + prop_varianza[2]
@@ -86,28 +99,443 @@ Dibujemos ahora el *Scree Plot*:
 fviz_eig(pca_wine, addlabels = TRUE, ylim = c(0, 70), title = "Scree Plot")
 ```
 
-Para retener al menos el 80% de la información original deberíamos
+Si vemos la **proporción de varianza explicada acumulada** se ve que 
+es necesario coger 5 componentes principales para retener el 80% de la información.
 
+```{r}
+cumsum(prop_varianza)
+```
 
 ### Ejercicio 6
 
-La matriz `rotation` es la siguiente:
+A partir de la matriz `rotation` podemos encontrar las 3 variables que más 
+contribuyen a la PC1:
+
+```{r}
+ord <- pca_wine$rotation[, 1] |>
+  abs() |>
+  sort(decreasing = TRUE)
+
+ord[1:3]
+```
+
+En este caso son V7, V6 y V12 (en ese orden).
+
+Esto nos dice que, la **primera componente** del análisis está midiendo 
+**principalmente** la cantidad de los siguientes compuestos químicos:
+
+- V7: Flavanoids
+- V6: Total phenols
+- V12: OD280/OD315 of diluted wines
+
+### Ejercicio 7
+
+```{r}
+fviz_pca_biplot(pca_wine, repel = TRUE,
+                col.var = "#2E9FDF", col.ind = "#696969",
+                title = "Biplot de wine")
+```
+
+Sabiendo que V6 = *Total phenols* y V7 = *Flavanoids*, se puede ver que son 2 
+vectores muy parecidos (dirección y magnitud), formando un ángulo muy agudo
+que indica alta correlación. Esto quiere decir que los vinos que presentan
+una gran cantidad de *Flavanoids* también presentan *Total phenols* y viceversa.
+
+Los dos grupos de los cuadrantes inferiores se separan claramente puesto que 
+estos presentan compuestos químicos muy diferentes.
+
+```{r}
+fviz_pca_biplot(pca_wine, repel = TRUE,
+                col.var = "#2E9FDF", col.ind = wine$class,
+                title = "Biplot de wine")
+```
+
+Coloreando los puntos (vinos) según la clase original apuntada en el dataset
+se observa que los grupos mencionados anteriormente pertenecen a clases 
+distintas, verificando que seguramente tengan perfiles químicos muy diferentes.
+
+### Ejercicio 8
+
+```{r}
+primer_vino <- wine_data_norm[1, ] # Primera observación ya escalada
+
+sum(pca_wine$rotation[,1] * primer_vino)  # Multiplicación por el primer autovector
+                                          # (vector de loadings)
+pca_wine$x[1, 1]
+```
+
+Se ha calculado la coordenada de la primera observación en el nuevo espacio
+del primer componente principal. Es decir, se ha obtenido la primera coordenada
+de la proyección en dicha primera componente principal.
+
+Esto quiere decir que, si nos quedásemos únicamente con una componente principal
+ese sería el *score* del primer vino, y junto al resto de vinos conformarían 
+una varianza máxima (igual al máximo autovalor).
+
+```{r}
+datos_nuevos <- as.matrix(wine_data_norm) %*% pca_wine$rotation
+
+lambda1 <- var(datos_nuevos[, 1])
+
+print(paste("Nuestro primer autovalor: ", lambda1))
+print(paste("Primer autovalor de la función prcomp: ", pca_wine$sdev[1] ^ 2))
+```
+
+Cómo vemos, la varianza de los datos proyectados en la **PC1** es
+aproximadamente 4.7.
+
+El valor calculado coincide con `pca_wine$x[1, 1]` porque `pca_wine$x`
+es el resultado de multiplicar $X_{escalado} \space U$, donde $U$ está 
+compuesta por los autovectores en forma de columnas.
+
+## Versión Completa
+
+Empezaré la versión completa por el **paso 2** debido a que el paso uno
+es idéntico a lo que se hizo en la versión reducida.
+
+### Paso 2
+
+Usar la función `summary()` con un objeto `prcomp` nos permite obtener la
+desviación estándar, la proporción de varianza explicada y la acumulada de 
+cada una de las componentes principales:
+
+```{r}
+summary(pca_wine)
+```
+
+### Paso 3
+
+El objeto pca_wine contiene varios elementos interesantes:
+
+```{r}
+names(pca_wine)
+```
+
+El elemento `rotation` es la matriz cuyas columnas son los **vectores de** 
+**loadings** o **autovectores** de la matriz de covarianza, es decir, las propias 
+**componentes principales**:
 
 ```{r}
 pca_wine$rotation
 ```
 
-Podemos encontrar las 3 variables que más contribuyen a la PC1:
+Las componentes principales tienen la propiedad de ser **incorreladas** entre sí,
+que geométricamente significa que su **producto escalar** debe ser 0:
 
 ```{r}
-sort(abs(pca_wine$rotation[, 1]), decreasing = TRUE)[1:3] 
+sum(pca_wine$rotation[, 1] * pca_wine$rotation[, 2]) # prácticamente 0
 ```
 
-En este caso son V7, V6 y V12 (en ese orden).
+Además, cada componente representa una **combinación lineal** de todas las 
+variables originales. Por tanto, llamando $Z_1$ a la primera componente principal:
 
-Esto nos dice que, la **primera componente** del análisis intenta medir
-mayoritariamente la cantidad de dichas variables:
+$$
+Z_1 = -0.144*V_1 + 0.245 * V_2 + 0.002*V_3 + 0.239*V_4 -0.142*V_5 
+-0.395*V_6 -0.423*V_7 + 0.299*V_8 -0.313*V_9 + 0.089*V_{10} -0.297*V_{11} 
+-0.376*V_{12} -0.287*V_{13}
+$$
 
-- V7 (Flavanoids)
-- V6 (Total phenols)
-- V12 (OD280/OD315 of diluted wines)
+Tantos números uno detrás de otro pueden ser difíciles de interpretar, por lo 
+que es importante destacar que la magnitud de los *coeficientes o loadings* 
+representa qué tanto está midiendo la componente principal una determinada 
+variable. En la versión rápida de la práctica vimos que esta primera componente
+medía *en su mayor parte* cuánto de los siguientes compuestos presentan los vinos
+del dataset:
+
+- V7: Flavanoids
+- V6: Total phenols
+- V12: OD280/OD315 of diluted wines
+
+Cuando multiplicamos una observación del dataset (un vino) por un autovector 
+(componente principal) cualquiera, estamos obteniendo el **Score** de dicho 
+punto en dicha componente. Geométricamente se podría interpretar cómo la 
+proyección de dicho punto sobre el nuevo eje formado por la componente
+principal.
+
+El elemento `x` contiene los scores de todos las observaciones para cada una 
+de las componentes. Podemos imaginar la columna de `PC1` como todos los vinos proyectados en una única dimensión (el eje del PC1).
+
+```{r}
+pca_wine$x[, 1]
+```
+
+
+El elemento `sdev` es un vector con las raíces cuadradas de los **autovalores**.
+Como cada autovalor corresponde a la varianza que explica la componente 
+principal asociada, podemos obtenerlas fácilmente:
+
+```{r}
+pca_wine$sdev ^ 2
+```
+
+La **proporción de varianza explicada** no es más que dividir cada una por el 
+total:
+
+```{r}
+prop_varianza <- pca_wine$sdev^2 / sum(pca_wine$sdev^2)
+prop_varianza
+```
+
+Así como la **acumulada**:
+
+```{r}
+cumsum(prop_varianza)
+```
+
+### Paso 4
+
+#### Scree Plot
+
+En R base:
+
+```{r}
+x_cords <- barplot(100*prop_varianza,
+                   xlab = "Dimensions", 
+                   ylab = "Percentage of explained variances",
+                   names.arg = 1:13,
+                   main = "Scree Plot")
+
+lines(x = x_cords, y = prop_varianza * 100, lwd = 2)
+```
+
+Mediante `ggplot2`:
+
+```{r}
+library(ggplot2)
+
+ggplot(data = data.frame(pva = prop_varianza * 100, pc = 1:13),
+       aes(x = pc, y = pva)) + 
+  geom_col(width = 0.7) +
+  geom_line() + 
+  labs(x = "Dimensions",
+       y = "Percentage of explained variances",
+       title = "Scree Plot")
+```
+
+#### Biplot
+
+En R base:
+
+```{r}
+biplot(pca_wine, scale = 0, cex = 0.5)
+```
+
+#### Representación en dimensión reducida
+
+En `ggplot2`:
+
+```{r}
+pc1 <- pca_wine$x[, 1]
+pc2 <- pca_wine$x[, 2]
+ggplot(data = data.frame(cultivar = as.factor(wine$class), pc1, pc2),
+       aes(x = pc1, y = pc2, colour = cultivar)) +
+  geom_point() + 
+  labs(title = "ACP de Vinos (PC1 vs PC2)",
+       x = "PC1", y = "PC2")
+```
+
+En `factoextra`:
+
+```{r}
+fviz_pca_ind(pca_wine,
+             geom.ind = c("point", "text"),
+             col.ind = as.factor(wine$class))
+```
+
+
+### Paso 5
+
+```{r}
+fviz_contrib(pca_wine,
+             choice = c("var"))
+```
+
+
+```{r}
+fviz_contrib(pca_wine,
+             choice = c("var"),
+             axes = 2) # Especifica la dimensión 
+```
+
+Estas dos gráficas muestran los vectores de loadings de forma gráfica. Tal y 
+como se explicó anteriormente, se puede ver que la primera gráfica coincide con 
+nuestra conclusión de que la primera componente principal mide principalmente
+las variables V7, V6 y V12 (en ese orden de importancia).
+
+La línea rayada roja representa el valor de contribución esperada en el caso de 
+que todas las variables contribuyeran por igual. 
+
+$$
+\text{Línea roja} = \frac{100\%}{13} \approx 7.692
+$$
+
+### Preguntas de Álgebra Lineal
+
+#### Pregunta 1
+
+El espacio vectorial (e.v) en el que reside cada observación antes del ACP es 
+formalmente $\mathbb{R}^{13}$, puesto que cada observación se representa
+como un vector de características:
+
+$$x_i = (x_{i1}, \dots, x_{i13})$$
+
+La dimensión de un e.v se define como la cardinalidad de una cualquiera de sus
+bases.
+
+Así como $\mathbb{R^3}$ tiene dimensión 3 porque es generado por: 
+
+$$
+\mathcal{B} = \left\{ 
+\begin{pmatrix} 1 \\ 0 \\ 0 \end{pmatrix}, 
+\begin{pmatrix} 0 \\ 1 \\ 0 \end{pmatrix}, 
+\begin{pmatrix} 0 \\ 0 \\ 1 \end{pmatrix} 
+\right\}
+$$
+
+este espacio tiene dimensión 13 porque la cardinalidad de su base es 13.
+
+#### Pregunta 2
+
+Una base se dice ortogonal si todos los vectores que la conforman son 
+linealmente independientes.
+
+La nueva base formada por el ACP es ortogonal ya que así conseguimos que 
+varias componentes **no capturen información redundante**, es decir, que son
+**incorreladas**.
+
+**Caracterización de diagonalizable:**
+
+Un endomorfismo $f: V \rightarrow V$ es diagonalizable si y sólo si existe
+una base $\mathcal{B}$ de $V$ formada únicamente por autovectores de $f$.
+En ese caso, la matriz asociada $D$ en esa base es diagonal y su diagonal
+principal está compuesta por los autovalores de $f$.
+
+Además la matriz de cambio de base $P$ verifica:
+
+$$
+D = PAP^{-1}
+$$
+o equivalentemente:
+
+$$
+A = P^{-1}DP
+$$
+
+Si recordamos el proceso del PCA, llegábamos a: 
+
+$$
+\Sigma u = \lambda u \implies u^t \Sigma u = \lambda = \text{Var}(Xu)
+$$
+
+Así pues, como hemos construido una nueva base a partir de los autovectores
+de la matriz de covarianza, los cuales si ponemos en forma de columna tenemos:
+
+$$
+U=(u_1|\dots|u_n)
+$$
+
+Esta matriz $U$ no es más que la de cambio de base $P$ mencionada antes. 
+Todo esto nos lleva a que:
+
+$$
+\Sigma = U^{-1}DU \\
+D = U \Sigma U^{-1}
+$$
+
+Por lo que obtenemos que la matriz de covarianza en esa nueva base es diagonal,
+lo que tiene sentido puesto que las componentes principales siempre son 
+incorreladas entre sí.
+
+#### Pregunta 3
+
+Si miramos la definición de autovector de una matriz A: $Av = \lambda u$. 
+Son aquellos vectores, que tras una transformación lineal no cambian su 
+dirección, sólo su magnitud por un escalar $\lambda$.
+
+Obtener los autovectores de la matriz de covarianza $\Sigma$ de alguna forma
+nos trata de decir que las componentes principales son aquellas direcciones
+en las que la varianza total de los datos originales se preserva.
+
+#### Pregunta 4
+
+Si recordamos el problema del PCA, para hallar la primera componente principal
+debíamos:
+
+$$
+\max_u \text{Var}(Xu)
+$$
+
+donde $Xu$ se corresponde a las proyecciones de los datos en esa componente.
+
+$$
+\text{Var}(Xu) = \frac{1}{n-1}(Xu)^t(Xu) = \frac{1}{n-1} (u^t X^t) (X u)
+= u^t \Sigma u
+$$
+
+Luego, tras el proceso de optimización obteniamos:
+
+$$
+\Sigma u = \lambda u \implies u^t \Sigma u = \lambda = \text{Var}(Xu)
+$$
+
+De ahí que encontrar el mayor autovalor equivalga a maximizar la varianza de
+los datos en esa componente.
+
+#### Pregunta 5
+
+Justo por lo que acabamos de discutir, los primeros componentes principales 
+están asociados a los mayores autovalores (y por tanto a las mayores varianzas
+explicadas). Escoger un subconjunto de los **primeros componentes** nos 
+garantiza que la varianza explicada siempre va a ser la máxima posible.
+
+#### Pregunta 6
+
+```{r}
+pc1 <- pca_wine$rotation[, 1]
+pc2 <- pca_wine$rotation[, 2]
+pc3 <- pca_wine$rotation[, 3]
+
+ord1 <- pc1 |> 
+  abs() |> 
+  sort(decreasing = TRUE)
+
+ord2 <- pc2 |>
+  abs() |>
+  sort(decreasing = TRUE)
+
+ord3 <- pc3 |>
+  abs() |>
+  sort(decreasing = TRUE)
+
+print(ord1[1:3])
+print(ord2[1:3])
+print(ord3[1:3])
+```
+
+- V6 y V7 (Phenols y Flavanoids): responsables del sabor amargo, la sensación
+que deja en la boca y el cuerpo del vino. En este contexto, distinguen vinos 
+hechos de una variedad de uva más potente.
+
+#### Pregunta 8
+
+Volvamos a representar el biplot:
+
+```{r}
+fviz_pca_biplot(pca_wine,
+                col.var = "#2E9FDF",
+                title = "Biplot de wine")
+```
+
+Se pueden distinguir 3 grupos visualmente: 
+
+1. El grupo de arriba se separa de los 2 de abajo gracias a la PC1, pues 
+tendrán el perfil químico que mide PC1 bastante diferente
+
+2. Los dos grupos de abajo se separan gracias a la PC2 (sin esta, solo veríamos
+2 clusters). 
+
+En el contexto de este dataset (que tiene 3 clases de vino) el PCA resulta 
+adecuado para distinguir dichas clases y eliminar el ruido que se produce
+en representaciones de una mayor dimensionalidad.
+
+
