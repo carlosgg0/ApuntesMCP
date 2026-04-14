@@ -1,7 +1,11 @@
 ---
 title: "Práctica 4"
 author: "Carlos García"
-format: pdf
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
 ---
 # Análisis de Componentes Principales (PCA)
 

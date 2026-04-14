@@ -1,7 +1,11 @@
 ---
 title: "practica1"
 author: "Carlos García"
-format: html
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
 ---
 
 # Práctica 1 - Simulación de Red de Calor

@@ -1,7 +1,11 @@
 ---
 title: "Práctica 3"
 author: "Carlos García Guzmán"
-format: html
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
 ---
 
 # PageRank
