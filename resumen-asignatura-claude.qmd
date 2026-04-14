@@ -1,0 +1,736 @@
+---
+title: "Resumen de Álgebra Lineal Computacional con R"
+subtitle: "Referencia rápida de conceptos, fórmulas y funciones"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    number-sections: true
+    theme: flatly
+    code-fold: false
+    highlight-style: github
+    self-contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE, echo = TRUE)
+```
+
+---
+
+# Preliminares: R y Tidyverse
+
+## Tipos de datos y vectores
+
+```{r}
+# Tipos atómicos
+x   <- pi          # numeric (double)
+a   <- 1L          # integer
+b   <- "texto"     # character
+ok  <- TRUE        # logical
+na  <- NA          # valor faltante
+
+# Construir vectores con c()
+v <- c(1, 2, 3)
+v_char <- c("a", "b", "c")
+
+# Secuencias
+6:3              # descendente
+seq(0, 1, by = 0.1)
+
+# Indexación (1-based)
+v[2]             # segundo elemento
+v[c(1, 3)]       # primero y tercero
+v[v > 1]         # filtrado lógico
+which(v > 1)     # índices que cumplen condición
+```
+
+## Listas
+
+```{r}
+lst <- list(primero = TRUE, segundo = 5, tercero = "hola")
+lst[[1]]          # acceso por índice
+lst$tercero       # acceso por nombre
+lst[["segundo"]]  # acceso por nombre (cadena)
+lst[c(1, 3)]      # sublista (devuelve lista)
+```
+
+## Operaciones vectorizadas y reciclaje
+
+```{r}
+1:10 / 2          # componente a componente
+1:6 + c(1, 2)     # reciclaje: el vector corto se repite
+```
+
+## Tidyverse: verbos principales
+
+```{r}
+library(tidyverse)
+
+# El pipe nativo |> pasa el resultado como primer argumento
+1:10 |> mean()
+
+# select() — elegir columnas
+starwars |> select(name, height, mass)
+starwars |> select(starts_with("h"))
+starwars |> select(where(is.numeric))
+starwars |> select(-mass)               # excluir columna
+
+# filter() — filtrar filas
+starwars |> filter(species == "Human")
+starwars |> filter(species %in% c("Human", "Droid"))
+starwars |> filter(species == "Human", eye_color == "blue")  # AND implícito
+
+# mutate() — crear / transformar columnas
+starwars |>
+  mutate(
+    alt_m = height / 100,
+    IMC   = mass / alt_m^2,
+    estado = case_when(
+      IMC <= 30 ~ "normal",
+      IMC <= 34 ~ "sobrepeso",
+      IMC >  34 ~ "obeso",
+      .default  = "desconocido"
+    )
+  )
+
+# arrange() — reordenar filas
+starwars |> arrange(height)            # ascendente
+starwars |> arrange(desc(height))      # descendente
+
+# summarise() + group_by() — estadísticos por grupo
+starwars |>
+  group_by(species) |>
+  summarise(
+    n             = n(),
+    altura_media  = mean(height, na.rm = TRUE),
+    peso_medio    = mean(mass,   na.rm = TRUE)
+  )
+```
+
+---
+
+# Resolución de Grandes Sistemas de Ecuaciones
+
+## Métodos directos
+
+### Función `solve()` (método general)
+
+```{r}
+A <- matrix(c(4, 1, -1,
+              1, 6,  2,
+             -1, 2,  5), nrow = 3, byrow = TRUE)
+b <- c(6, 15, 12)
+
+x <- solve(A, b)   # Ax = b
+A %*% x            # verificación: debe dar b
+```
+
+### Factorización LU  *(coste $\mathcal{O}(n^3)$ una vez; $\mathcal{O}(n^2)$ por cada b)*
+
+$$PA = LU \quad \Rightarrow \quad Ax = b \;\text{ se resuelve en dos pasos:}$$
+
+$$Ly = Pb \quad \text{(sustitución progresiva)} \qquad Ux = y \quad \text{(sustitución regresiva)}$$
+
+```{r}
+library(Matrix)
+
+decomp <- lu(A)
+res    <- Matrix::expand(decomp)
+L <- res$L;  U <- res$U;  P <- res$P
+
+# Resolución manual
+b_perm <- P %*% b
+y <- solve(L, b_perm)   # forwardsolve(L, b_perm)
+x <- solve(U, y)        # backsolve(U, y)
+```
+
+### Factorización de Cholesky *(solo para A simétrica definida positiva)*
+
+$$A = R^\top R \quad (R \text{ triangular superior})$$
+
+**¡Ojo!** `chol(A)` devuelve $R$ triangular **superior**, no $L$ inferior.
+Para obtener $L$: `L <- t(chol(A))`.
+
+```{r}
+R <- chol(A)                 # triangular superior: A = t(R) %*% R
+t(R) %*% R                  # verificación
+
+# Resolución: Ax = b  =>  R^T(Rx) = b
+y <- forwardsolve(t(R), b)   # paso 1: R^T y = b
+x <- backsolve(R, y)         # paso 2: R x = y
+```
+
+**Aplicación — Regresión por mínimos cuadrados** (ecuaciones normales):
+
+$$\underbrace{X^\top X}_{\text{s.d.p.}} \hat\beta = X^\top y$$
+
+```{r}
+X     <- cbind(1, x_datos)       # matriz de diseño
+AtA   <- t(X) %*% X
+Atb   <- t(X) %*% y_datos
+R     <- chol(AtA)
+y_tmp <- solve(t(R), Atb)
+beta  <- backsolve(R, y_tmp)
+```
+
+### Factorización QR
+
+$$A = QR, \quad Q^\top Q = I \quad \Rightarrow \quad Rx = Q^\top b$$
+
+```{r}
+decomp <- qr(A)
+x      <- qr.solve(decomp, b)   # forma recomendada
+
+# Manual:
+Q <- qr.Q(decomp);  R <- qr.R(decomp)
+y <- t(Q) %*% b
+x <- backsolve(R, y)
+```
+
+### Resumen comparativo de factorizaciones
+
+| Factorización | Condición sobre A | Coste | Función R |
+|:---:|:---:|:---:|:---:|
+| LU | General (cuadrada) | $\mathcal{O}(n^3)$ | `lu()` / `solve()` |
+| Cholesky | Simétrica def. pos. | $\sim\mathcal{O}(n^3/3)$ | `chol()` |
+| QR | Cualquier $m\times n$ | $\mathcal{O}(mn^2)$ | `qr()` |
+
+## Estabilidad numérica y número de condición
+
+$$\kappa(A) = \|A\|\cdot\|A^{-1}\| = \frac{\sigma_{\max}}{\sigma_{\min}}$$
+
+> Si $\kappa(A) \approx 10^k$, podemos perder hasta $k$ dígitos de precisión.
+
+```{r}
+kappa(A)           # número de condición
+rcond(A)           # recíproco del número de condición (más estable)
+```
+
+## Matrices dispersas (paquete `Matrix`)
+
+Una matriz es **dispersa** si la mayoría de sus elementos son cero. En lugar de almacenar $n^2$ valores, el formato **CSC** (*Compressed Sparse Column*) almacena solo los $\text{NNZ}$ valores no nulos.
+
+$$\text{sparsity} = 1 - \frac{\text{NNZ}}{n^2}$$
+
+```{r}
+library(Matrix)
+
+# Crear matriz dispersa especificando posiciones (i, j) y valores (x)
+A_sp <- sparseMatrix(
+  i    = c(1, 3, 5),
+  j    = c(1, 3, 5),
+  x    = c(2, 4, 6),
+  dims = c(5, 5)
+)
+
+# Convertir densa a dispersa
+A_sp <- as(A_densa, "dgCMatrix")
+
+# Comparar memoria
+object.size(A_densa)
+object.size(A_sp)
+
+# Visualizar estructura de no-ceros
+image(A_sp)
+```
+
+### Matrices tridiagonales y de banda
+
+$$a_{ij} = 0 \quad \text{si } |i - j| > p \quad (p = \text{semiancho de banda})$$
+
+```{r}
+n <- 5
+# Construir tridiagonal (diag principal + sub/superdiagonal)
+i_idx <- c(1:n,       2:n,       1:(n-1))
+j_idx <- c(1:n,       1:(n-1),   2:n)
+x_val <- c(rep(2, n), rep(-1, n-1), rep(-1, n-1))
+
+A_tri <- sparseMatrix(i = i_idx, j = j_idx, x = x_val, dims = c(n, n))
+solve(A_tri, b)     # solver automáticamente optimizado para bandas
+```
+
+## Métodos iterativos
+
+Estos métodos reescriben $Ax = b$ como $x = Bx + c$ y construyen una sucesión convergente $x^{(k+1)} = Bx^{(k)} + c$.
+
+### Jacobi
+
+$$x_i^{(k+1)} = \frac{1}{a_{ii}}\left(b_i - \sum_{j \neq i} a_{ij} x_j^{(k)}\right)$$
+
+### Gauss-Seidel (más rápido que Jacobi)
+
+$$x_i^{(k+1)} = \frac{1}{a_{ii}}\left(b_i - \sum_{j < i} a_{ij} x_j^{(k+1)} - \sum_{j > i} a_{ij} x_j^{(k)}\right)$$
+
+*(usa los valores ya actualizados en la misma iteración)*
+
+### Gradiente conjugado (para A simétrica definida positiva)
+
+Converge teóricamente en $n$ pasos; en la práctica, mucho antes.
+
+```{r}
+library(Rlinsolve)
+
+lsolve.jacobi(A, b, xinit = rep(0, nrow(A)))   # Jacobi
+lsolve.gs(A, b)                                 # Gauss-Seidel
+lsolve.cg(A, b)                                 # Gradiente Conjugado
+# Cada resultado contiene: $x (solución), $iter (iteraciones), $errors
+```
+
+### Convergencia
+
+| Condición | Jacobi converge | Gauss-Seidel / CG convergen |
+|:---|:---:|:---:|
+| A diagonal dominante | ✓ | ✓ |
+| A simétrica def. positiva | — | ✓ |
+| Radio espectral de B < 1 | condición necesaria y suficiente |
+
+### Benchmarking de métodos
+
+```{r}
+library(microbenchmark)
+microbenchmark(
+  solve_directo   = solve(A, b),
+  backsolve_tri   = backsolve(R, b),
+  jacobi          = lsolve.jacobi(A, b),
+  times = 10
+)
+```
+
+---
+
+# Autovalores, Autovectores y SVD
+
+## Definiciones
+
+$$A\mathbf{v} = \lambda \mathbf{v}, \quad \mathbf{v} \neq \mathbf{0}$$
+
+- $\lambda$: **autovalor** (valor propio / eigenvalue)
+- $\mathbf{v}$: **autovector** asociado
+
+El **polinomio característico** es $\det(A - \lambda I) = 0$.
+
+### Función `eigen()` (R base — matrices densas pequeñas)
+
+```{r}
+res <- eigen(A)
+res$values   # autovalores (complejos en general)
+res$vectors  # autovectores (en columnas)
+
+# Para obtener solo la parte real:
+lambda <- Re(res$values[1])          # autovalor dominante
+v      <- Re(res$vectors[, 1])       # autovector asociado
+v_norm <- v / sum(v)                 # normalizado (suma 1)
+```
+
+## Método de la potencia (*Power Method*)
+
+Encuentra el **autovalor dominante** $\lambda_1$ (el de mayor módulo).
+
+$$\mathbf{x}^{(k+1)} = \frac{A\,\mathbf{x}^{(k)}}{\|A\,\mathbf{x}^{(k)}\|}, \qquad \lambda \approx \frac{\mathbf{x}^\top A\,\mathbf{x}}{\mathbf{x}^\top \mathbf{x}} \quad \text{(Cociente de Rayleigh)}$$
+
+```{r}
+# Implementación manual (compatible con matrices dispersas)
+power_method <- function(A, epsilon = 1e-6, max_iter = 1000) {
+  n   <- nrow(A)
+  x   <- rnorm(n); x <- x / sqrt(sum(x^2))
+  lam_old <- 0
+  for (i in seq_len(max_iter)) {
+    x_new <- as.vector(A %*% x)
+    lam   <- sqrt(sum(x_new^2))
+    x_new <- x_new / lam
+    if (abs(lam - lam_old) < epsilon)
+      return(list(eigenvalue = lam, eigenvector = x_new, iter = i))
+    x <- x_new; lam_old <- lam
+  }
+  list(eigenvalue = lam, eigenvector = x, iter = max_iter)
+}
+
+# Con la librería matlib (fines didácticos, solo matrices densas pequeñas)
+library(matlib)
+res_pm <- powerMethod(A, v = c(1, 1), plot = FALSE)
+res_pm$value    # autovalor
+res_pm$vector   # autovector
+```
+
+## Algoritmo QR (todos los autovalores)
+
+Itera $A_{k+1} = R_k Q_k$ donde $A_k = Q_k R_k$. Converge a una matriz casi diagonal cuyos elementos son los autovalores.
+
+```{r}
+qr_simple_algo <- function(A, iter = 100) {
+  Ak <- A
+  for (i in seq_len(iter)) {
+    dc <- qr(Ak)
+    Q  <- qr.Q(dc); R <- qr.R(dc)
+    Ak <- R %*% Q
+  }
+  list(matriz_final = Ak, autovalores = diag(Ak))
+}
+```
+
+> **En producción**: para matrices dispersas grandes, usar `RSpectra::eigs()`.
+
+## Matrices de Leslie (dinámica de poblaciones)
+
+$$\mathbf{n}(t+1) = L\,\mathbf{n}(t)$$
+
+$$L = \begin{pmatrix} f_1 & f_2 & \cdots & f_m \\ s_1 & 0 & \cdots & 0 \\ 0 & s_2 & \cdots & 0 \\ \vdots & & \ddots & \vdots \\ 0 & \cdots & s_{m-1} & 0 \end{pmatrix}$$
+
+- $f_i$: fecundidad del grupo de edad $i$
+- $s_i$: probabilidad de supervivencia del grupo $i$ al $i+1$
+
+**Interpretación del autovalor dominante $\lambda_1$:**
+
+| Condición | Tendencia poblacional |
+|:---:|:---:|
+| $\lambda_1 > 1$ | Crecimiento |
+| $\lambda_1 = 1$ | Estable |
+| $\lambda_1 < 1$ | Extinción |
+
+```{r}
+L <- matrix(c(0,   0.5, 2.0,
+              0.1, 0,   0,
+              0,   0.5, 0),
+            nrow = 3, byrow = TRUE)
+
+ev   <- eigen(L)
+lam1 <- Re(ev$values[1])        # tasa de crecimiento
+v_est <- Re(ev$vectors[, 1])
+v_est <- v_est / sum(v_est)     # distribución estable por edades
+
+# Proyección n pasos hacia adelante
+n0    <- c(100, 100, 100)
+n_t   <- Reduce(function(n, .) L %*% n, seq_len(10), accumulate = TRUE,
+                init = n0)
+```
+
+## Descomposición en Valores Singulares (SVD)
+
+$$A_{m\times n} = U_{m\times m}\, \Sigma_{m\times n}\, V_{n\times n}^\top$$
+
+- $U$, $V$: matrices **ortogonales** ($U^\top U = I$, $V^\top V = I$)
+- $\Sigma$: diagonal con **valores singulares** $\sigma_1 \geq \sigma_2 \geq \cdots \geq 0$
+
+**Relaciones clave:**
+
+$$\sigma_i = \sqrt{\lambda_i(A^\top A)}, \qquad \kappa(A) = \frac{\sigma_{\max}}{\sigma_{\min}}$$
+
+$$A^+ = V \Sigma^+ U^\top \quad \text{(pseudoinversa de Moore-Penrose)}$$
+
+**Teorema de Eckart-Young:** La mejor aproximación de rango $k$ de $A$ es:
+
+$$A_k = \sum_{i=1}^{k} \sigma_i \mathbf{u}_i \mathbf{v}_i^\top = U_k \Sigma_k V_k^\top$$
+
+```{r}
+res <- svd(A)
+res$d   # valores singulares (sigma_i)
+res$u   # columnas = vectores singulares izquierdos (U)
+res$v   # columnas = vectores singulares derechos (V)
+
+# Reconstrucción completa
+A_rec <- res$u %*% diag(res$d) %*% t(res$v)
+
+# Aproximación de rango k
+k <- 3
+A_k <- res$u[, 1:k] %*% diag(res$d[1:k]) %*% t(res$v[, 1:k])
+
+# Pseudoinversa
+D_inv <- diag(1 / res$d)
+A_plus <- res$v %*% D_inv %*% t(res$u)
+
+# Número de condición
+res$d[1] / tail(res$d, 1)
+```
+
+### Ejemplo: compresión de imagen con SVD
+
+```{r}
+V_mat      <- volcano               # matriz 87x61
+svd_v      <- svd(V_mat)
+
+aproximar  <- function(s, k)
+  s$u[, 1:k] %*% diag(s$d[1:k]) %*% t(s$v[, 1:k])
+
+par(mfrow = c(1, 4))
+image(V_mat,           main = "Original")
+image(aproximar(svd_v, 2),  main = "k = 2")
+image(aproximar(svd_v, 5),  main = "k = 5")
+image(aproximar(svd_v, 15), main = "k = 15")
+```
+
+---
+
+# PageRank
+
+## Idea fundamental
+
+La importancia de un nodo se hereda de los nodos que lo enlazan:
+
+$$\mathbf{r} = M\,\mathbf{r}, \qquad M_{ij} = \frac{\text{flujo de } j \to i}{\text{flujo total saliente de } j}$$
+
+Esto es equivalente a encontrar el **autovector asociado al autovalor 1** de la matriz de transición $M$ (estocástica por columnas).
+
+## Pasos del algoritmo
+
+1. **Construir la matriz de adyacencia ponderada** (transpuesta): $M_{ij}$ = flujo de $j$ a $i$.
+2. **Normalizar por columnas** para obtener la matriz de transición $M$ (estocástica):
+
+$$M_{ij} \leftarrow \frac{M_{ij}}{\sum_i M_{ij}}$$
+
+3. **Resolver** $M\mathbf{r} = \mathbf{r}$ (autovector de autovalor 1) usando el método de la potencia.
+4. **Normalizar** el vector resultante para que sume 1.
+
+```{r}
+# Normalizar columnas (convertir en estocástica)
+M_norm <- scale(M, center = FALSE, scale = colSums(M))
+
+# Método de la potencia con matlib
+library(matlib)
+res     <- powerMethod(M_norm)
+r       <- res$vector / sum(res$vector)  # PageRanks (suman 1)
+```
+
+## Problemas en la web real
+
+| Problema | Descripción | Efecto matemático |
+|:---|:---|:---|
+| *Dead ends* | Nodo sin enlaces salientes | Columna de ceros; $M$ deja de ser estocástica |
+| *Spider traps* | Grupo cerrado de nodos | Absorbe toda la importancia (*rank sinks*) |
+
+## Matriz de Google (factor de amortiguación $d$)
+
+$$G = d\cdot M + (1-d)\cdot \frac{1}{n} J_n$$
+
+- $d \approx 0.85$ (valor estándar)
+- $J_n$: matriz de unos $n\times n$
+- $G$ es estocástica, irreducible y primitiva → **único** autovector de probabilidad (Perron-Frobenius)
+
+```{r}
+d <- 0.85
+n <- nrow(M_norm)
+J <- matrix(1, n, n)
+
+G <- d * M_norm + (1 - d) * (1/n) * J
+
+res_g       <- powerMethod(G)
+pagerank    <- res_g$vector / sum(res_g$vector)
+```
+
+## Código completo (ejemplo de juguete)
+
+```{r}
+library(matlib)
+
+# Matriz de flujos (fila i = destino, col j = origen)
+M_raw <- matrix(c(
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  1, 0, 0, 0, 1, 0, 1, 0,
+  0, 0, 0, 0, 0, 0, 0, 1,
+  0, 1, 0, 0, 0, 1, 0, 0,
+  0, 0, 0, 1, 0, 0, 0, 0,
+  0, 1, 0, 1, 1, 1, 0, 3,
+  0, 0, 0, 0, 0, 1, 0, 0
+), nrow = 8, byrow = TRUE)
+
+# 1. Normalizar columnas
+M <- scale(M_raw, center = FALSE, scale = colSums(M_raw))
+
+# 2. Matriz de Google
+d <- 0.85; n <- 8
+G <- d * M + (1 - d) * matrix(1/n, n, n)
+
+# 3. PageRank
+pr <- powerMethod(G)$vector
+pr <- pr / sum(pr)
+names(pr) <- paste0("Web", 1:n)
+sort(pr, decreasing = TRUE)
+```
+
+## Ejercicio tipo: mercado de marcas (Cadenas de Markov)
+
+Dado que las cuotas de mercado en equilibrio satisfacen $M\,\pi = \pi$, el **estado estacionario** es el autovector de autovalor 1 de la matriz de transición. El procedimiento es idéntico al PageRank.
+
+```{r}
+# Verificar estado estacionario elevando a alta potencia
+M_pot <- Reduce(`%*%`, replicate(100, M, simplify = FALSE))
+# Cualquier columna es aprox. el vector estacionario
+M_pot[, 1]
+```
+
+---
+
+# Análisis de Componentes Principales (PCA)
+
+## Motivación
+
+PCA busca **combinaciones lineales** de las variables originales (componentes principales) que maximicen la varianza explicada. La varianza = información.
+
+## Fundamento matemático
+
+Dada la matriz de datos centrada $X$ ($n\times p$, media cero), buscamos un vector unitario $\mathbf{w}$ que maximice la varianza proyectada:
+
+$$\max_{\|\mathbf{w}\|=1} \text{Var}(X\mathbf{w}) = \max_{\|\mathbf{w}\|=1} \mathbf{w}^\top \underbrace{S}_{\text{cov}} \mathbf{w}$$
+
+Usando multiplicadores de Lagrange → $S\mathbf{w} = \lambda\mathbf{w}$: la solución es el **autovector asociado al mayor autovalor** de la matriz de covarianza $S$.
+
+$$S = \frac{1}{n-1} X^\top X, \qquad \text{(datos centrados)}$$
+
+**Conexión con SVD:** si $X = U\Sigma V^\top$, entonces los **loadings** (direcciones principales) son las columnas de $V$, y los **scores** son $XV = U\Sigma$.
+
+## Varianza explicada
+
+$$\text{Varianza de PC}_k = \lambda_k, \qquad \text{Proporción} = \frac{\lambda_k}{\sum_j \lambda_j}$$
+
+## Función `prcomp()` y su objeto resultado
+
+```{r}
+acp <- prcomp(datos, center = TRUE, scale. = TRUE)
+#              ↑ siempre centrar y escalar (salvo datos ya homogéneos)
+```
+
+| Elemento | Contenido | Fórmula |
+|:---|:---|:---|
+| `acp$sdev` | Desv. típica de cada PC | $\sqrt{\lambda_k}$ |
+| `acp$sdev^2` | **Varianza** explicada por cada PC | $\lambda_k$ |
+| `acp$rotation` | **Loadings** (autovectores en columnas) | $V$ de la SVD |
+| `acp$x` | **Scores** (coordenadas de las obs. en el nuevo espacio) | $XV$ |
+| `acp$center` | Medias usadas para centrar | — |
+| `acp$scale` | Desviaciones típicas usadas para escalar | — |
+
+```{r}
+# Proporción de varianza explicada
+var_exp <- acp$sdev^2 / sum(acp$sdev^2)
+cumsum(var_exp)   # varianza acumulada
+
+# Score manual de una observación (ej. fila 5)
+obs_scaled  <- scale(datos)[5, ]
+score_manual <- sum(obs_scaled * acp$rotation[, 1])
+# debe coincidir con acp$x[5, 1]
+```
+
+## Prerrequisito: análisis de correlación
+
+```{r}
+library(corrplot)
+
+cor(datos) |>
+  corrplot(method = "number", type = "upper",
+           col = colorRampPalette(c("#BB4444","#FFFFFF","#4477AA"))(200))
+```
+
+> **Regla:** si las variables están incorreladas, PCA no aporta reducción útil.
+
+## Flujo completo de un PCA
+
+```{r}
+library(tidyverse)
+library(factoextra)
+library(corrplot)
+library(patchwork)
+
+# 1. Exploración y correlación
+cor(USArrests) |> corrplot(method = "number", type = "upper")
+
+# 2. PCA (siempre scale = TRUE salvo variables ya homogéneas)
+acp <- prcomp(USArrests, center = TRUE, scale. = TRUE)
+summary(acp)    # varianza explicada por cada componente
+
+# 3. Scree plot (buscar "codo")
+fviz_eig(acp, addlabels = TRUE, ylim = c(0, 70))
+
+# 4. Gráfico de variables (loadings + contribuciones)
+fviz_pca_var(acp,
+             col.var  = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel    = TRUE)
+
+# 5. Gráfico de individuos (scores)
+fviz_pca_ind(acp,
+             col.ind = "cos2",           # calidad de representación
+             gradient.cols = c("blue", "orange", "red"),
+             repel = TRUE)
+
+# 6. Biplot (variables + individuos)
+fviz_pca_biplot(acp, repel = TRUE,
+                col.var = "#2E9FDF",
+                col.ind = "#696969")
+
+# 7. Contribución de variables a cada componente
+fviz_contrib(acp, choice = "var", axes = 1)   # a PC1
+fviz_contrib(acp, choice = "var", axes = 2)   # a PC2
+fviz_contrib(acp, choice = "ind", axes = 1)   # individuos a PC1
+```
+
+## Interpretación del biplot
+
+| Elemento | Interpretación |
+|:---|:---|
+| **Longitud de flecha** | Calidad de representación de la variable en el plano |
+| **Ángulo entre flechas pequeño** | Alta correlación positiva entre variables |
+| **Ángulo ~90°** | Variables incorreladas |
+| **Ángulo ~180°** | Correlación negativa |
+| **Punto en dirección de flecha** | El individuo tiene valor alto en esa variable |
+| **Puntos próximos** | Individuos con perfil similar |
+
+## PCA con grupos (colorear por variable categórica)
+
+```{r}
+# Ejemplo con iris
+acp_iris <- prcomp(iris[, 1:4], center = TRUE, scale. = TRUE)
+
+fviz_pca_biplot(acp_iris,
+                geom.ind = "point",
+                col.ind  = iris$Species,
+                palette  = c("#00AFBB", "#E7B800", "#FC4E07"),
+                addEllipses = TRUE,
+                legend.title = "Especie")
+```
+
+## PCA sin escalar: ¡peligro!
+
+```{r}
+acp_noesc <- prcomp(USArrests, center = TRUE, scale. = FALSE)
+# La variable con mayor varianza absoluta (Assault) domina PC1
+# → resultado engañoso: no refleja la estructura multivariante real
+```
+
+## Regla del codo y criterios de selección de componentes
+
+```{r}
+# Criterio del 80-85%: cuántas PCs necesito para retener ese porcentaje
+var_acum <- cumsum(acp$sdev^2) / sum(acp$sdev^2)
+which(var_acum >= 0.85)[1]   # número mínimo de PCs
+
+# Criterio de Kaiser: retener PCs con autovalor > 1 (datos escalados)
+sum(acp$sdev^2 > 1)
+```
+
+## Detección de outliers con PCA
+
+```{r}
+# Los individuos con mayor distancia al centro en el biplot son outliers
+fviz_pca_ind(acp, repel = TRUE)
+
+# Contribución de individuos: los que más "estiran" las componentes
+fviz_contrib(acp, choice = "ind", axes = 1:2)
+```
+
+---
+
+# Referencia rápida de librerías
+
+| Librería | Propósito principal |
+|:---|:---|
+| `Matrix` | Matrices dispersas, factorizaciones LU/Cholesky avanzadas |
+| `Rlinsolve` | Métodos iterativos (Jacobi, Gauss-Seidel, CG) |
+| `matlib` | Método de la potencia didáctico |
+| `RSpectra` | Autovalores/SVD para matrices dispersas gigantes |
+| `factoextra` | Visualizaciones de PCA (`fviz_*`) |
+| `corrplot` | Matrices de correlación visuales |
+| `patchwork` | Combinar gráficos de ggplot2 |
+| `microbenchmark` | Benchmarking de tiempos de ejecución |
+| `igraph` | Análisis de grafos y redes |
+| `tidyverse` | Manipulación y visualización de datos |

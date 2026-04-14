@@ -1,0 +1,812 @@
+---
+title: "Resumen de Referencia Rápida — Modelización y Análisis de Datos"
+author: ""
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contenidos"
+    number-sections: true
+    theme: cosmo
+    highlight-style: github
+    code-fold: false
+    self-contained: true
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+execute:
+  eval: false
+  echo: true
+---
+
+# Preliminares: R y tidyverse
+
+## Fundamentos de R
+
+### Asignación y tipos básicos
+
+```{r}
+# Asignación con flecha (estilo R)
+x <- 10
+nombre <- "Modelización"
+
+# Tipos atómicos:
+# Numeric (double): 1.5, 200
+# Character: "texto"  (necesita comillas)
+# Logical: TRUE / FALSE
+```
+
+### Vectores y vectorización
+
+```{r}
+precios  <- c(100, 120, 150)
+ciudades <- c("Málaga", "Sevilla", "Granada")
+
+# Vectorización: operaciones sobre todo el vector a la vez
+precios_con_iva <- precios * 1.21
+```
+
+### Guía de estilo
+
+- **`snake_case`**: nombres en minúsculas separados por `_` (`tasa_interes`).
+- Nombres descriptivos; evita `x`, `y`, `temp`.
+- Sin espacios en nombres de variables.
+
+---
+
+## Gestión de proyectos reproducibles
+
+| Herramienta | Uso |
+|---|---|
+| **RStudio Projects (`.Rproj`)** | Define la raíz del proyecto → rutas relativas |
+| **Git / GitHub** | Control de versiones: `commit`, `push`, `pull` |
+| **`renv`** | Entornos aislados de paquetes |
+| **Quarto (`.qmd`)** | Documentos reproducibles (texto + código + resultados) |
+
+```{r}
+renv::init()        # Inicializar entorno
+renv::snapshot()    # Guardar estado de paquetes → renv.lock
+renv::restore()     # Reconstruir entorno en otro equipo
+```
+
+**Estructura de carpetas recomendada:**
+```
+proyecto/
+├── proyecto.Rproj
+├── data-raw/      # datos originales (nunca editar)
+├── data/          # datos procesados
+├── scripts/       # código R
+├── output/        # gráficos, tablas exportadas
+└── chapters/      # documentos narrativos
+```
+
+---
+
+## Ingeniería de datos con tidyverse
+
+```{r}
+library(tidyverse)
+data("starwars")
+```
+
+### El operador tubería `|>`
+
+Pasa el resultado de la izquierda como **primer argumento** de la función de la derecha:
+
+```{r}
+starwars |> filter(species == "Droid") |> select(name, homeworld)
+```
+
+### Verbos principales de `dplyr`
+
+| Verbo | Acción |
+|---|---|
+| `select()` | Seleccionar / renombrar columnas |
+| `filter()` | Seleccionar filas por condición |
+| `arrange()` | Ordenar filas |
+| `mutate()` | Crear / modificar columnas |
+| `summarise()` + `group_by()` | Agregar por grupos |
+| `slice()` / `slice_max()` / `slice_sample()` | Seleccionar filas por posición o valor |
+
+```{r}
+# select() — ayudantes útiles
+starwars |> select(name, where(is.numeric))
+starwars |> select(starts_with("hair"), ends_with("color"))
+
+# filter() — operadores: ==, !=, >, <, >=, <=, &, |, %in%
+starwars |> filter(species == "Human", height > 180)
+starwars |> filter(homeworld %in% c("Tatooine", "Naboo"))
+
+# arrange() — desc() para descendente
+starwars |> arrange(desc(mass), height)
+
+# mutate() — if_else y case_when
+starwars |> mutate(tipo = if_else(mass > 100, "Pesado", "Ligero"))
+starwars |> mutate(cat = case_when(
+  height < 100 ~ "Pequeño",
+  height < 180 ~ "Mediano",
+  height >= 180 ~ "Alto",
+  TRUE ~ "Desconocido"   # captura NA
+))
+
+# summarise() + group_by()
+starwars |>
+  group_by(species) |>
+  summarise(
+    n          = n(),
+    altura_med = mean(height, na.rm = TRUE),
+    peso_max   = max(mass,   na.rm = TRUE)
+  ) |>
+  ungroup()
+```
+
+### Joins
+
+```{r}
+left_join(tabla_a, tabla_b, by = "clave")   # mantiene todas las filas de tabla_a
+```
+
+### Programación funcional con `purrr`
+
+```{r}
+# map devuelve lista; map_dbl → vector numérico; map_df → data frame
+starwars |> select(where(is.numeric)) |> map_dbl(mean, na.rm = TRUE)
+
+# Leer múltiples archivos de una sola vez
+list.files("data/ventas", pattern = "*.csv", full.names = TRUE) |>
+  map_df(read_csv)
+```
+
+---
+
+# Resolución de grandes sistemas de ecuaciones ($Ax = b$)
+
+## Métodos directos y factorizaciones
+
+### `solve()` — solución directa
+
+```{r}
+A <- matrix(c(4,1,-1, 1,6,2, -1,2,5), nrow = 3, byrow = TRUE)
+b <- c(6, 15, 12)
+x <- solve(A, b)   # Internamente usa factorización LU
+A %*% x            # Verificación: debe devolver b
+```
+
+> **Importante:** `solve(A, b)` **no** calcula $A^{-1}b$ explícitamente (costoso e inestable). Usa factorización LU internamente.
+
+---
+
+### Factorización LU
+
+$$PA = LU$$
+
+donde $L$ es triangular inferior, $U$ triangular superior y $P$ la matriz de permutación.  
+Resolver $Ax = b$ se convierte en dos pasos $O(n^2)$:
+
+1. **Sustitución progresiva:** resolver $Ly = Pb$
+2. **Sustitución regresiva:** resolver $Ux = y$
+
+```{r}
+library(Matrix)
+decomp_lu <- lu(A)
+res <- Matrix::expand(decomp_lu)   # Extrae L, U, P
+L <- res$L;  U <- res$U;  P <- res$P
+
+# Resolución manual
+b_perm <- P %*% b
+y <- solve(L, b_perm)   # o forwardsolve(L, b_perm)
+x <- solve(U, y)         # o backsolve(U, y)
+
+# Comparar con solución directa
+solve(A, b)
+```
+
+---
+
+### Factorización de Cholesky (matrices simétricas definidas positivas)
+
+$$A = LL^T \quad (A = R^TR \text{ en R, con } R \text{ triangular superior})$$
+
+Útil cuando $A = X^TX$ (regresión lineal, MCO). Es ~2× más rápida que LU.
+
+```{r}
+R <- chol(A)          # R es triangular SUPERIOR: A = R^T R
+# Para obtener L triangular inferior: L <- t(chol(A))
+
+# Resolución: A x = b  ⟹  R^T(Rx) = b
+y    <- forwardsolve(t(R), b)   # Paso 1: R^T y = b
+x    <- backsolve(R, y)          # Paso 2: R x = y
+
+# Aplicación: regresión lineal por MCO
+X      <- cbind(1, x_datos)
+A_reg  <- t(X) %*% X
+b_reg  <- t(X) %*% y_datos
+R_reg  <- chol(A_reg)
+y_tmp  <- solve(t(R_reg), b_reg)
+beta   <- solve(R_reg, y_tmp)    # Coeficientes β̂
+```
+
+---
+
+### Factorización QR
+
+$$A = QR \quad (Q \text{ ortogonal: } Q^TQ = I, \; R \text{ triangular superior})$$
+
+Resolver $Ax = b$: como $A = QR$, entonces $Rx = Q^Tb$.
+
+```{r}
+decomp_qr <- qr(A)
+x_qr      <- qr.solve(decomp_qr, b)   # Método directo recomendado
+
+# Paso a paso
+Q <- qr.Q(decomp_qr);  R <- qr.R(decomp_qr)
+y <- t(Q) %*% b
+x <- backsolve(R, y)
+```
+
+---
+
+### Resumen de factorizaciones
+
+| Factorización | Condición | Coste | Función R |
+|---|---|---|---|
+| LU | General | $O(n^3)$ / reutilizar $O(n^2)$ | `lu()` (Matrix), `solve()` |
+| Cholesky | Simétrica definida positiva | $\sim O(n^3)/2$ | `chol()` |
+| QR | Cualquier $A$ (incluso rectangular) | $O(n^3)$ | `qr()`, `qr.solve()` |
+
+---
+
+## Matrices dispersas (sparse)
+
+El nivel de dispersión (sparsity):
+$$\text{Sparsity} = 1 - \frac{\text{NNZ}}{n \times m}$$
+
+El paquete `Matrix` almacena únicamente valores no nulos en formato **CSC** (Compressed Sparse Column): reduce memoria de $O(n^2)$ a $O(\text{NNZ})$.
+
+```{r}
+library(Matrix)
+
+# Crear matriz dispersa
+A_sp <- sparseMatrix(
+  i    = c(1, 2500, 5000),
+  j    = c(1, 2500, 5000),
+  x    = 5,
+  dims = c(5000, 5000)
+)
+
+# Comparar memoria
+print(object.size(matrix(0, 5000, 5000)), units = "MB")  # ~190 MB
+print(object.size(A_sp), units = "KB")                   # ~21 KB
+
+# solve() detecta automáticamente la estructura dispersa y aplica
+# el solver más eficiente
+x_sp <- solve(A_sp, b)
+```
+
+### Matriz tridiagonal (ejemplo: ecuación del calor)
+
+```{r}
+n <- 1000
+i_idx <- c(1:n,   2:n,       1:(n-1))
+j_idx <- c(1:n,   1:(n-1),   2:n)
+x_val <- c(rep(2, n), rep(-1, (n-1)*2))
+
+A_tri <- sparseMatrix(i = i_idx, j = j_idx, x = x_val, dims = c(n, n))
+b_vec <- rep(0, n);  b_vec[n] <- 100
+x_sol <- solve(A_tri, b_vec)   # O(n) internamente
+```
+
+### Solvers especializados
+
+```{r}
+backsolve(R, b)      # Sistema triangular superior  — O(n²)
+forwardsolve(L, b)   # Sistema triangular inferior  — O(n²)
+# Ambos son mucho más rápidos que solve() genérico
+```
+
+---
+
+## Estabilidad numérica: número de condición
+
+$$\kappa(A) = \|A\| \cdot \|A^{-1}\|$$
+
+- $\kappa(A) \approx 1$ → bien condicionado.  
+- $\kappa(A) = 10^k$ → se pueden perder hasta $k$ dígitos de precisión.
+
+```{r}
+rcond(A)              # Recíproco del número de condición (más estable)
+kappa(A, exact = TRUE)
+```
+
+---
+
+## Métodos iterativos
+
+Para sistemas masivos donde LU/Cholesky no caben en memoria.
+
+### Condición suficiente de convergencia
+
+**Diagonal dominante:** $|a_{ii}| \geq \sum_{j \neq i} |a_{ij}|$ para todo $i$.
+
+| Método | Convergencia garantizada si... | Velocidad típica |
+|---|---|---|
+| Jacobi | $A$ diagonal dominante | Lenta |
+| Gauss-Seidel | $A$ diagonal estrictamente dominante o SPD | Más rápida que Jacobi |
+| Gradiente Conjugado (CG) | $A$ simétrica definida positiva | Rápida, converge en $\leq n$ pasos |
+
+```{r}
+library(Rlinsolve)
+
+x0 <- c(0, 0, 0)
+
+# Jacobi
+res_jac <- lsolve.jacobi(A, b, xinit = x0)
+res_jac$x      # solución
+res_jac$iter   # número de iteraciones
+
+# Gauss-Seidel
+res_gs <- lsolve.gs(A, b)
+
+# Gradiente Conjugado (requiere A simétrica definida positiva)
+res_cg <- lsolve.cg(A, b)
+```
+
+### Comparar tiempos con microbenchmark
+
+```{r}
+library(microbenchmark)
+microbenchmark(
+  solve_generico  = solve(R_densa, b),
+  backsolve_esp   = backsolve(R_densa, b),
+  solve_disperso  = solve(R_sparse, b),
+  times = 10
+)
+```
+
+---
+
+# Autovalores, autovectores y SVD
+
+## Definiciones
+
+**Autovalor y autovector:** dado $A \in \mathcal{M}_n(\mathbb{R})$, un escalar $\lambda$ y un vector no nulo $v$ son **autovalor** y **autovector** de $A$ si:
+
+$$A v = \lambda v$$
+
+Equivalentemente, $\det(A - \lambda I) = 0$ (polinomio característico).
+
+**Propiedades clave:**
+
+- La **traza** de $A$ = suma de autovalores: $\text{tr}(A) = \sum_i \lambda_i$.
+- El **determinante** de $A$ = producto de autovalores: $\det(A) = \prod_i \lambda_i$.
+- Autovectores asociados a autovalores distintos son linealmente independientes.
+- Si $A$ es simétrica real, todos sus autovalores son reales y sus autovectores ortogonales.
+
+---
+
+## Cálculo en R
+
+```{r}
+# eigen() devuelve autovalores y autovectores (trabaja en C por defecto)
+resultado <- eigen(A)
+resultado$values   # autovalores (ordenados de mayor a menor módulo)
+resultado$vectors  # autovectores en columnas
+
+# Verificación: A %*% v == lambda * v
+lambda <- resultado$values[1]
+v      <- resultado$vectors[, 1]
+A %*% v                    # debe ser igual a:
+lambda * v
+```
+
+---
+
+## Método de la potencia
+
+Algoritmo iterativo para encontrar el **autovalor dominante** (de mayor módulo) y su autovector asociado.
+
+**Algoritmo:**
+
+1. Partir de un vector inicial $x^{(0)}$ aleatorio.
+2. Iterar: $x^{(k+1)} = A x^{(k)}$, luego normalizar $x^{(k+1)} \leftarrow x^{(k+1)} / \|x^{(k+1)}\|$.
+3. Converge al autovector asociado a $\lambda_1$ (mayor autovalor en módulo).
+
+```{r}
+library(matlib)
+
+resultado_pm <- powerMethod(A)
+resultado_pm$value    # autovalor dominante
+resultado_pm$vector   # autovector asociado
+
+# Normalizar autovector para que sume 1 (útil en PageRank)
+resultado_pm$vector / sum(resultado_pm$vector)
+```
+
+---
+
+## Matrices de Leslie (dinámica de poblaciones)
+
+La **matriz de Leslie** modela la evolución de una población estructurada por edades:
+
+$$L = \begin{pmatrix}
+f_1 & f_2 & f_3 & \cdots & f_n \\
+s_1 & 0   & 0   & \cdots & 0   \\
+0   & s_2 & 0   & \cdots & 0   \\
+\vdots & & \ddots & & \vdots \\
+0   & 0   & \cdots & s_{n-1} & 0
+\end{pmatrix}$$
+
+- $f_i$: tasas de fecundidad por clase de edad.
+- $s_i$: tasas de supervivencia de clase $i$ a clase $i+1$.
+
+**Interpretación del autovalor dominante $\lambda_1$:**
+
+| $\lambda_1$ | Comportamiento |
+|---|---|
+| $\lambda_1 > 1$ | Población crece |
+| $\lambda_1 = 1$ | Población estable |
+| $\lambda_1 < 1$ | Población decrece |
+
+El **autovector asociado a $\lambda_1$** da la **distribución estable de edades**.
+
+```{r}
+# Ejemplo de matriz de Leslie
+f <- c(0, 1.2, 0.8, 0.3)   # fecundidades
+s <- c(0.9, 0.7, 0.5)       # supervivencias
+n <- length(f)
+
+L <- matrix(0, nrow = n, ncol = n)
+L[1, ] <- f                           # primera fila: fecundidades
+for (i in 1:(n-1)) L[i+1, i] <- s[i] # subdiagonal: supervivencias
+
+# Análisis
+res <- eigen(L)
+lambda1    <- Re(res$values[1])         # autovalor dominante (real)
+dist_estable <- Re(res$vectors[, 1])
+dist_estable <- dist_estable / sum(dist_estable)   # normalizar
+
+# Simular evolución de la población
+N0 <- c(100, 80, 60, 40)   # población inicial por clases
+N_t <- N0
+for (t in 1:20) N_t <- L %*% N_t
+```
+
+---
+
+## Descomposición en Valores Singulares (SVD)
+
+$$A = U \Sigma V^T$$
+
+donde:
+
+- $U \in \mathbb{R}^{m \times m}$: matriz ortogonal de **vectores singulares izquierdos** (columnas = autovectores de $AA^T$).
+- $\Sigma \in \mathbb{R}^{m \times n}$: matriz diagonal con **valores singulares** $\sigma_1 \geq \sigma_2 \geq \cdots \geq 0$.
+- $V \in \mathbb{R}^{n \times n}$: matriz ortogonal de **vectores singulares derechos** (columnas = autovectores de $A^TA$).
+
+**Relación con autovalores:** los valores singulares son $\sigma_i = \sqrt{\lambda_i(A^TA)}$.
+
+**Rango y aproximación de rango bajo (compresión):**
+
+$$A \approx A_k = \sum_{i=1}^{k} \sigma_i u_i v_i^T \quad (k \ll \min(m, n))$$
+
+```{r}
+# SVD en R
+svd_resultado <- svd(A)
+svd_resultado$d   # valores singulares σ_i (vector)
+svd_resultado$u   # U  (vectores singulares izquierdos)
+svd_resultado$v   # V  (vectores singulares derechos)
+
+# Verificación: A ≈ U %*% diag(d) %*% t(V)
+A_reconstruida <- svd_resultado$u %*% diag(svd_resultado$d) %*% t(svd_resultado$v)
+
+# Aproximación de rango k (compresión de imagen, etc.)
+k <- 10
+A_k <- svd_resultado$u[, 1:k] %*%
+       diag(svd_resultado$d[1:k]) %*%
+       t(svd_resultado$v[, 1:k])
+
+# Varianza explicada por cada componente (análogo a PCA)
+var_explicada <- svd_resultado$d^2 / sum(svd_resultado$d^2)
+cumsum(var_explicada)
+```
+
+---
+
+# Algoritmo PageRank
+
+## Idea central
+
+La importancia de una página web se propaga: cuantas más veces se transita de la página $j$ a la $i$, más importancia hereda $i$ de $j$.
+
+Se busca un **vector de importancias** $x = (x_1, \ldots, x_n)^T$ tal que:
+
+$$Mx = x$$
+
+es decir, $x$ es un **autovector asociado al autovalor 1** de la matriz de transición $M$.
+
+---
+
+## Pasos del algoritmo
+
+**Paso 1 — Construir la matriz de adyacencia ponderada**
+
+La entrada $(i,j)$ recoge el número de visitantes que pasan de la página $j$ a la $i$.
+
+**Paso 2 — Normalizar columnas (matriz de transición)**
+
+La entrada $(i,j)$ es la probabilidad de transitar de $j$ a $i$. Las columnas deben sumar 1 (matriz **estocástica por columnas**).
+
+```{r}
+M <- scale(M, center = FALSE, scale = colSums(M))
+# equivalente a: M <- sweep(M, 2, colSums(M), FUN = "/")
+```
+
+**Paso 3 — Resolver $Mx = x$** (autovector de autovalor 1)
+
+```{r}
+library(matlib)
+resultado <- powerMethod(M)
+x <- resultado$vector / sum(resultado$vector)   # normalizar: suma = 1
+```
+
+O con `eigen()`:
+
+```{r}
+res_eigen <- eigen(M)
+idx <- which.max(Re(res_eigen$values))          # índice del autovalor 1
+x   <- Re(res_eigen$vectors[, idx])
+x   <- x / sum(x)
+```
+
+---
+
+## Problemas en la web real y soluciones
+
+| Problema | Descripción | Efecto |
+|---|---|---|
+| **Dead ends** (callejones sin salida) | Páginas sin enlaces salientes | Columna de ceros → la importancia "se fuga" |
+| **Spider traps** (trampas de araña) | Grupos de páginas cerradas entre sí | Absorben toda la importancia (Rank Sinks) |
+
+**Solución: factor de amortiguación $d$**
+
+---
+
+## Matriz de Google
+
+$$G = d \cdot M + (1-d) \cdot \frac{1}{n} J$$
+
+donde:
+
+- $M$: matriz de transición normalizada (con dead ends corregidos).
+- $J$: matriz $n \times n$ de todo unos.
+- $d = 0.85$: valor estándar (el usuario sigue un enlace el 85% del tiempo, el 15% restante salta a cualquier página aleatoria).
+- $\frac{1-d}{n} \approx \frac{0.15}{n}$: probabilidad uniforme de "teletransportación".
+
+$G$ es estocástica, irreductible y primitiva → por el **Teorema de Perron-Frobenius**, existe un único autovector de probabilidad con autovalor 1, y el método de la potencia siempre converge.
+
+```{r}
+d <- 0.85
+n <- nrow(M)
+
+# Corregir dead ends (columnas de ceros → distribución uniforme)
+col_sumas <- colSums(M)
+for (j in which(col_sumas == 0)) M[, j] <- 1/n
+
+# Normalizar columnas
+M <- scale(M, center = FALSE, scale = colSums(M))
+
+# Construir Matriz de Google
+J <- matrix(1, nrow = n, ncol = n)
+G <- d * M + (1 - d) * (1/n) * J
+
+# PageRank via método de la potencia
+library(matlib)
+resultado_g <- powerMethod(G)
+pagerank    <- resultado_g$vector / sum(resultado_g$vector)
+```
+
+---
+
+## Interpretación de resultados
+
+```{r}
+# Crear data frame con puntuaciones ordenadas
+df_pr <- data.frame(
+  pagina   = 1:n,
+  pagerank = pagerank
+) |> arrange(desc(pagerank))
+
+print(df_pr)
+```
+
+---
+
+## Ejercicios tipo: cadenas de Markov
+
+La lógica de PageRank es idéntica a la de las **cadenas de Markov de tiempo discreto**: el estado estacionario es el autovector de autovalor 1.
+
+```{r}
+# Verificar que el estado estacionario se alcanza elevando M a potencia alta
+M_potencia <- M
+for (i in 1:50) M_potencia <- M_potencia %*% M
+# Todas las columnas deben ser ≈ iguales al vector PageRank
+M_potencia[, 1]
+```
+
+---
+
+# Análisis de Componentes Principales (PCA)
+
+## Qué es PCA
+
+PCA es una técnica de **reducción de dimensión** no supervisada. Busca combinaciones lineales de las variables originales (llamadas **componentes principales**) que capturen la **máxima variabilidad** de los datos.
+
+> Se asume que variabilidad = información.
+
+---
+
+## Fundamento matemático
+
+Dado $X$ ($n \times p$, centrada), buscamos $u$ con $\|u\| = 1$ que maximiza:
+
+$$\text{Var}(Xu) = u^T \Sigma u \quad \text{sujeto a } u^Tu = 1$$
+
+donde $\Sigma = \frac{X^TX}{n-1}$ es la **matriz de covarianza**.
+
+Construyendo el Lagrangiano y derivando:
+
+$$\Sigma u = \lambda u$$
+
+Las **componentes principales** son los **autovectores de $\Sigma$** y la varianza en cada dirección es el **autovalor** correspondiente $\lambda$.
+
+**Relación con SVD:** en la práctica se usa la SVD de $X$ para mayor estabilidad numérica:
+
+$$X = U\Sigma V^T$$
+
+---
+
+## Preprocesamiento obligatorio
+
+```{r}
+# Estandarizar (media 0, varianza 1) antes del PCA
+# Imprescindible cuando las variables tienen distintas escalas
+X_std <- scale(USArrests)   # o usar scale = TRUE en prcomp()
+```
+
+---
+
+## Ejecutar PCA en R
+
+```{r}
+acp <- prcomp(USArrests, center = TRUE, scale = TRUE)
+```
+
+### Elementos del objeto `prcomp`
+
+| Elemento | Descripción | Fórmula / Nota |
+|---|---|---|
+| `acp$sdev` | Desviaciones típicas de cada CP | $\sqrt{\lambda_i}$ |
+| `acp$sdev^2` | Varianzas = autovalores | $\lambda_i$ |
+| `acp$rotation` | Matriz de **loadings** ($p \times p$) | Autovectores de $\Sigma$ (en columnas) |
+| `acp$x` | **Scores** de cada observación | $X_{\text{std}} \cdot \text{rotation}$ |
+| `acp$center` | Medias utilizadas para centrar | |
+| `acp$scale` | Desviaciones típicas usadas para escalar | |
+
+```{r}
+# Varianza explicada por cada componente
+varianza_exp <- acp$sdev^2
+prop_var     <- varianza_exp / sum(varianza_exp)
+cumsum(prop_var)   # varianza acumulada
+
+# Ejemplo de salida esperada (USArrests):
+# PC1: 62%, PC2: 24.7%, PC3: 8.9%, PC4: 4.3%
+
+# Calcular un score a mano (verificación)
+calif_std <- scale(USArrests)[5, ]        # fila de California, datos escalados
+score_pc1 <- sum(calif_std * acp$rotation[, 1])
+score_pc1   # debe coincidir con acp$x[5, 1]
+```
+
+---
+
+## Selección del número de componentes
+
+**Criterios habituales:**
+
+1. **Regla del codo (scree plot):** punto donde la varianza adicional cae drásticamente.
+2. **Varianza acumulada ≥ 70–85%**.
+3. **Autovalores > 1** (regla de Kaiser, datos estandarizados).
+
+---
+
+## Gráficos con `factoextra`
+
+```{r}
+library(factoextra)
+library(ggplot2)
+
+# Scree plot — varianza explicada por componente
+fviz_eig(acp, addlabels = TRUE, ylim = c(0, 70))
+
+# Círculo de correlaciones (contribución de variables)
+fviz_pca_var(acp,
+             col.var  = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel    = TRUE)
+
+# Biplot — variables + individuos juntos
+fviz_pca_biplot(acp,
+                repel    = TRUE,
+                col.var  = "#2E9FDF",
+                col.ind  = "#696969")
+
+# Individuos coloreados por grupo
+fviz_pca_ind(acp,
+             col.ind = iris$Species,   # variable de grupo
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             addEllipses = TRUE,
+             repel = TRUE)
+
+# Contribución de variables a PC1 y PC2
+fviz_contrib(acp, choice = "var", axes = 1)   # PC1
+fviz_contrib(acp, choice = "var", axes = 2)   # PC2
+```
+
+---
+
+## Interpretación del biplot
+
+| Elemento | Significado |
+|---|---|
+| **Flechas (variables)** | Longitud ∝ representación en el plano. Ángulo agudo ↔ alta correlación positiva. Ángulo obtuso ↔ correlación negativa. |
+| **Puntos (individuos)** | Proximidad ↔ perfiles similares. Si un punto está en la dirección de una flecha, tiene valor alto en esa variable. |
+| **Eje horizontal (PC1)** | Dirección de máxima varianza |
+| **Eje vertical (PC2)** | Segunda dirección de máxima varianza, ortogonal a PC1 |
+
+> **Nota:** los signos en `rotation` son arbitrarios ($v$ y $-v$ definen la misma dirección). Lo importante es el signo **relativo** entre variables dentro de la misma componente.
+
+---
+
+## Flujo de trabajo completo (PCA)
+
+```{r}
+library(tidyverse)
+library(factoextra)
+library(corrplot)
+
+# 1. Análisis exploratorio
+cor(USArrests) |>
+  corrplot(method = "number", type = "upper")
+
+# 2. Ejecutar PCA (con centrado y escalado)
+acp <- prcomp(USArrests, center = TRUE, scale = TRUE)
+
+# 3. Evaluar varianza explicada
+fviz_eig(acp, addlabels = TRUE)
+summary(acp)   # tabla completa de varianzas
+
+# 4. Inspeccionar loadings
+acp$rotation
+
+# 5. Biplot
+fviz_pca_biplot(acp, repel = TRUE)
+
+# 6. Usar scores para análisis posterior
+scores_df <- as.data.frame(acp$x)
+scores_df$estado <- rownames(USArrests)
+```
+
+---
+
+## Reconstrucción aproximada (rango bajo)
+
+```{r}
+# Reconstruir con k componentes principales
+k <- 2
+X_std    <- scale(USArrests)
+X_reconstruida_k <- acp$x[, 1:k] %*% t(acp$rotation[, 1:k])
+# Desescalar si es necesario
+X_reconstruida_k <- sweep(X_reconstruida_k, 2, attr(scale(USArrests),"scaled:scale"), "*")
+X_reconstruida_k <- sweep(X_reconstruida_k, 2, attr(scale(USArrests),"scaled:center"), "+")
+```
