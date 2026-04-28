@@ -7,13 +7,15 @@ book:
   date: "3/7/2026"
   chapters:
     - index.qmd
-    - t1-intro-R.qmd
-    - t1-tidyverse.qmd
-    - t1-ggplot2.qmd
-    - t2-sistemas-ecuaciones.qmd
-    - t3-autovalores.qmd
-    - t5-PCA.qmd
-    - t6-redes-sociales.qmd
+    - part: "Capítulos"
+      chapters:
+        - chapters/t1-intro-R.qmd
+        - chapters/t1-tidyverse.qmd
+        - chapters/t1-ggplot2.qmd
+        - chapters/t2-sistemas-ecuaciones.qmd
+        - chapters/t3-autovalores.qmd
+        - chapters/t5-PCA.qmd
+        - chapters/t6-redes-sociales.qmd
     - references.qmd
 
 bibliography: references.bib
