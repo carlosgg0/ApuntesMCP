@@ -1,0 +1,153 @@
+---
+title: "Proyecto Práctico 1 SNA: Visualización y Manipulación de Grafos en R"
+subtitle: "Clase 1"
+author: "Carlos García Guzmán"
+output: html_document
+---
+
+# Misión: Diseño de la Red de Alianzas y Traiciones 🏰
+
+## El Contexto del Problema
+
+Te han contratado como Analista de Datos Visuales para la producción de una nueva serie de televisión de fantasía medieval (al estilo *Juego de Tronos*). Los guionistas tienen un esquema mental muy complejo de qué personajes son aliados, quiénes son enemigos secretos y a qué "Casas" nobles pertenecen.
+
+El problema es que, en formato texto, la trama es incomprensible. Tu objetivo es **construir desde cero la red de personajes, añadir los metadatos de las Casas y generar una visualización espectacular** que los directores puedan entender de un vistazo.
+
+## Paso 0: Preparación del Entorno
+
+Carga las librerías necesarias.
+
+```{r setup, warning=FALSE, message=FALSE}
+library(igraph)
+library(dplyr)
+library(readxl)
+```
+
+---
+
+## Reto 1: Construcción del Grafo desde Datos Tabulares
+
+Los guionistas te han pasado la información básica en dos tablas de Excel (que aquí recrearemos como `data.frames`). 
+1. Los **Nodos** (Personajes y sus afiliaciones).
+2. Las **Aristas** (Interacciones o relaciones entre ellos).
+
+```{r datos-guion}
+# Importar datos desde archivos Excel
+personajes <- read_excel("data/personajes.xlsx")
+relaciones <- read_excel("data/relaciones.xlsx")
+```
+
+### Tarea 1.1: Generar el Grafo
+Utiliza la función adecuada de `igraph` para crear un **grafo dirigido** a partir de las tablas `relaciones` (para la estructura) y `personajes` (para los vértices/metadata). Guárdalo en la variable `g_tronos`. *Pista: Busca la función que crea grafos desde data.frames e incluye los vértices explícitamente.*
+
+```{r reto-1-1}
+# Escribe tu código aquí
+g_tronos <- graph.data.frame(relaciones, 
+                             directed = TRUE, 
+                             vertices = personajes)
+g_tronos
+```
+
+---
+
+## Reto 2: Estilización y Atributos (La Magia Visual)
+
+Un grafo con puntos negros y líneas finas no le sirve a los directores. Vamos a usar los atributos (metadatos) para darle significado.
+
+### Tarea 2.1: Tamaño por Poder
+Usa el atributo `poder` de los nodos para que el tamaño de cada vértice en el gráfico refleje su nivel de influencia en la serie. Multiplica el poder por 3 para que los nodos se vean bien grandes.
+
+```{r reto-2-1}
+# Escribe tu código aquí
+V(g_tronos)$poder <- V(g_tronos)$poder * 3
+V(g_tronos)$size <- V(g_tronos)$poder
+plot(g_tronos)
+```
+
+### Tarea 2.2: Colores por "Casa" Nobiliaria
+Usando la lógica condicional, asigna un color de relleno diferente a los nodos dependiendo de su Casa:
+* Casa "León": `gold` (Dorado)
+* Casa "Lobo": `gray70` (Gris)
+* Casa "Cuervo": `purple` (Morado)
+* Casa "Ninguna": `black` (Negro)
+
+*Haz que el color del texto (label) de todos los nodos sea blanco para que resalte.*
+
+```{r reto-2-2}
+# Escribe tu código aquí
+indices_Leon <- V(g_tronos)$casa == "León" 
+indices_Lobo <- V(g_tronos)$casa == "Lobo"
+indices_Cuervo <- V(g_tronos)$casa == "Cuervo"
+indices_Ninguna <- V(g_tronos)$casa == "Ninguna"
+
+V(g_tronos)[indices_Leon]$color = "gold"
+V(g_tronos)[indices_Lobo]$color = "gray70"
+V(g_tronos)[indices_Cuervo]$color = "purple"
+V(g_tronos)[indices_Ninguna]$color = "black"
+
+plot(g_tronos)
+```
+
+### Tarea 2.3: Grosor de relaciones
+Haz que todas las aristas tengan un grosor (`width`) de 2, pero si la relación es de tipo "Odio" o "Contrato", que el color de la flecha sea `red` (rojo). Para el resto, usa `gray50`.
+
+```{r reto-2-3}
+# Escribe tu código aquí
+E(g_tronos)$width <- 2
+indices_Red <- E(g_tronos)$tipo == "Odio" | E(g_tronos)$tipo == "Contrato" 
+E(g_tronos)$color <- "gray50"
+E(g_tronos)$color[indices_Red] <- "red"
+plot(g_tronos)
+```
+
+---
+
+## Reto 3: Layouts y Visualización Avanzada
+
+Ha llegado el momento de pintar el cuadro final.
+
+### Tarea 3.1: Encontrar el Layout perfecto
+Dibuja el grafo usando el algoritmo de fuerzas **Fruchterman-Reingold**. Asegúrate de incluir curvatura en las aristas (`edge.curved = 0.2`) para que si hay flechas mutuas (ida y vuelta) no se pisen entre sí. Añade un título espectacular.
+
+```{r reto-3-1}
+# Escribe tu código aquí
+plot(g_tronos,
+     layout = layout_with_fr(g_tronos),
+     edge.curved = 0.2)
+```
+
+### Tarea 3.2: Agrupaciones (The "Mark Groups" feature)
+El director necesita ver claramente la separación mental de las tres Casas principales.
+1. Encuentra los índices numéricos de los personajes que pertenecen a la Casa "León".
+2. Encuentra los índices de la Casa "Lobo".
+3. Dibuja el grafo usando la función `mark.groups` pasándole estos conjuntos, para que igraph dibuje "nubes" o polígonos alrededor de estas facciones.
+
+```{r reto-3-2}
+# Escribe tu código aquí
+
+grupos <- list(indices_Leon, indices_Lobo)
+
+colores_grupos <- c("red", "yellow")
+
+plot(g_tronos,
+     layout = layout_with_fr(g_tronos),
+     mark.groups = grupos,
+     mark.col = colores_grupos)
+```
+
+## Reto Opcional (Modo Dios): Interrogando la topología
+
+Sin mirar las tablas de Excel originales, usando solo código de `igraph`: 
+Encuentra qué personaje (`name`) recibe información (flecha entrante) del "Espía".
+*(Pista: Puedes usar el operador direccional `%->%` o investigar los vecinos `neighbors()` o `incident()`)*
+
+```{r reto-4-opcional}
+# Escribe tu código aquí
+indices_dragon <- which(V(g_tronos)$casa == "Dragón")
+E(g_tronos)[indices_dragon %->% V(g_tronos)]
+
+head_of(g_tronos, indices_dragon)
+
+vertices <- neighbors(g_tronos, indices_dragon, mode = "out")
+V(g_tronos)[vertices]
+```

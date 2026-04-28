@@ -1,0 +1,178 @@
+---
+title: "Proyecto 2: Análisis de la Red de Aeropuertos (Plantilla Alumnos)"
+subtitle: "Repaso de Fundamentos y Estilización (Sesiones 1-3)"
+format: html
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Introducción
+En este proyecto repasaremos la representación de grafos, la manipulación de metadatos y la visualización avanzada con `ggraph`.
+
+## 0. Preparación del Dataset
+Ejecuta este bloque para generar nuestra red de aeropuertos europeos.
+
+```{r}
+#| label: data-generation
+set.seed(123)
+nodos_aeropuertos <- data.frame(
+  id = 1:10,
+  ciudad = c("Madrid", "Londres", "París", "Berlín", "Roma", "Lisboa", "Dublín", "Atenas", "Viena", "Ámsterdam"),
+  pais = c("ES", "UK", "FR", "DE", "IT", "PT", "IE", "GR", "AT", "NL"),
+  pasajeros_m = c(61, 80, 76, 35, 43, 31, 32, 25, 31, 71) # Millones de pasajeros
+)
+
+aristas_vuelos <- data.frame(
+  from = c(1,1,1,2,2,3,3,3,4,5,6,7,8,9,10,1,10,2),
+  to =   c(2,3,6,3,7,4,5,10,9,8,1,1,1,4,3,5,2,8),
+  distancia = sample(500:3000, 18)
+)
+```
+
+---
+
+## Ejercicio 1: Fundamentos de Representación
+
+**Objetivo:** Convertir los dataframes anteriores en un objeto `tidygraph`.
+
+*   **Tip:** ¡Hay un camino mucho más fácil! Vamos a usar **`igraph`** para construir la red y luego la pasaremos a `tidygraph`. La función `graph_from_data_frame()` puede recibir tanto las aristas (`d`) como los nodos (`vertices`) a la vez y hace la unión de metadatos automáticamente.
+
+*   **Funciones clave:** `graph_from_data_frame()`, `as_tbl_graph()`.
+
+*   **Esqueleto de ayuda:**
+    ```r
+    red_vuelos <- graph_from_data_frame(d = ..., vertices = ..., directed = TRUE) %>% 
+       as_tbl_graph()
+    ```
+
+```{r}
+#| label: reto-1
+# TU CÓDIGO AQUÍ:
+red_vuelos <- graph_from_data_frame(d = aristas_vuelos, 
+                                    vertices = nodos_aeropuertos, 
+                                    directed = TRUE) |> as_tbl_graph()
+```
+
+## Ejercicio 2: Metadatos y Filtrado
+**Objetivo:** Limpiar la red y quedarnos con los nodos que tengan al menos dos conexiones.
+
+*   **Tip:** Recuerda que para operar sobre nodos primero debes usar `activate(nodes)`.
+
+*   **Funciones clave:** `centrality_degree()`, `filter()`.
+
+```{r}
+#| label: reto-2
+# TU CÓDIGO AQUÍ:
+hubs_principales <- red_vuelos |>
+  activate(nodes) |>
+  mutate(
+    grado = centrality_degree()
+  ) |>
+  filter(grado >= 2)
+
+hubs_principales
+```
+
+## Ejercicio 3: Layouts Comparativos
+**Objetivo:** Comparar la geometría (Circular) frente a la estructura orgánica (FR).
+
+*   **Tip:** En `ggraph(grafo, layout = "...")`, prueba los valores `"circle"` y `"fr"`.
+
+*   **Capas necesarias:** `geom_edge_link()` y `geom_node_point()`.
+
+```{r}
+#| label: reto-3
+# TU CÓDIGO AQUÍ:
+ggraph(red_vuelos, layout = "circle") + 
+  geom_edge_link(color = "gray80") + 
+  geom_node_point(size = 5, color = "steelblue") +
+  labs(title = "Geometría circular") +
+  theme_graph()  
+  
+ggraph(red_vuelos, layout = "fr") + 
+  geom_edge_link(color = "gray80") + 
+  geom_node_point(size = 5, color = "steelblue") +
+  labs(title = "Geometría orgánica (FR)") + 
+  theme_graph() 
+```
+
+## Ejercicio 4: Estilización Condicional
+
+**Objetivo:** Resaltar importancia y distancia.
+
+*   **Tip:** Mapea el tamaño en `aes(size = pasajeros_m)` y el color de las aristas en `aes(color = distancia > 2000)`.
+
+*   **Funciones clave:** `geom_node_text(aes(label = ciudad))`, `scale_edge_color_manual()`.
+
+```{r}
+#| label: reto-4
+# TU CÓDIGO AQUÍ:
+ggraph(red_vuelos, layout = "fr") + 
+  geom_edge_link(aes(color = distancia > 2000)) + 
+  geom_node_point(color = "steelblue", aes(size = pasajeros_m)) +
+  geom_node_text(aes(label = ciudad)) + 
+  theme_graph()
+```
+
+---
+
+## Ejercicio 5: Intensidad y Relieve
+
+**Objetivo:** Uso de la transparencia (`alpha`).
+
+*   **Tip:** Si quieres que los vuelos cortos sean más oscuros, mapea `alpha = 1/distancia` dentro de `geom_edge_link`.
+
+```{r}
+#| label: reto-5
+# TU CÓDIGO AQUÍ:
+ggraph(red_vuelos, layout = "fr") + 
+  geom_edge_link(aes(alpha = 1 / distancia)) + 
+  geom_node_point(size = 5, color = "orange") +
+  labs(title = "Vuelos de corto radio",
+       subtitle = "Las líneas más intensas representan vuelos más cortos") + 
+  theme_graph() 
+```
+
+## Ejercicio 6: Identificación por Bandos
+**Objetivo:** Etiquetas con fondo y diferenciación por país.
+
+*   **Tip:** Usa `geom_node_label(aes(label = ciudad, fill = pais))` para crear las cajas de texto con color.
+
+```{r}
+#| label: reto-6
+# TU CÓDIGO AQUÍ:
+ggraph(red_vuelos, layout = "fr") + 
+  geom_edge_fan(color = "gray80") +
+  geom_node_label(aes(label = ciudad, fill = pais)) +
+  labs(title = "Nodos por país") + 
+  theme_graph() 
+```
+
+## Ejercicio 7: Análisis por Sede (Facetas)
+**Objetivo:** Separar la red en subgráficos regiones.
+
+*   **Tip:** Usa `facet_nodes(~ variable_agrupadora)` para crear los subgráficos automáticos.
+
+```{r}
+#| label: reto-7
+# TU CÓDIGO AQUÍ:
+red_vuelos |>
+  activate(nodes) |>
+  mutate(
+    en_espana = pais == 'ES'
+  ) |>
+  ggraph(layout = "stress") + 
+    geom_edge_link(alpha = 0.4) + 
+    geom_node_point(size = 5, aes(color = ifelse(en_espana, "red", "blue"))) +
+    facet_nodes(~en_espana) + 
+    labs(title = "Segmentación geográfica") + 
+    theme_graph() 
+```

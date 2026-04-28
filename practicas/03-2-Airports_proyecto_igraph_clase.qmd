@@ -1,0 +1,135 @@
+---
+title: "PROYECTO: Análisis de  Red de Aeropuertos (igraph)"
+subtitle: "Repaso de Fundamentos"
+format: html
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(igraph)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Introducción
+Repaso de:
+
+- representación de grafos, 
+- manipulación de metadatos 
+- visualización condicional (filtrado) 
+
+## 0. Preparación del Dataset
+Ejecuta este bloque para generar los datos básicos.
+
+```{r}
+#| label: data-generation
+set.seed(123)
+nodos_aeropuertos <- data.frame(
+  id = 1:10,
+  ciudad = c("Madrid", "Londres", "París", "Berlín", "Roma", "Lisboa", "Dublín", "Atenas", "Viena", "Ámsterdam"),
+  pais = c("ES", "UK", "FR", "DE", "IT", "PT", "IE", "GR", "AT", "NL"),
+  pasajeros_m = c(61, 80, 76, 35, 43, 31, 32, 25, 31, 71)
+)
+
+aristas_vuelos <- data.frame(
+  from = c(1,1,1,2,2,3,3,3,4,5,6,7,8,9,10,1,10,2),
+  to =   c(2,3,6,3,7,4,5,10,9,8,1,1,1,4,3,5,2,8),
+  distancia = sample(500:3000, 18)
+)
+```
+
+---
+
+## Reto 1: Creación del Grafo (7 min)
+**Objetivo:** Crear un objeto igraph a partir de dataframes.
+
+1. Usa `graph_from_data_frame()` para crear un objeto llamado `g_vuelos`.
+2. Asegúrate de que el grafo sea **dirigido**.
+3. Comprueba con la función `V()` y `E()` que los atributos (pasajeros, distancia) se han cargado correctamente.
+4. En atributo name coloca la abreviatura de cada aeropuerto:
+
+MAD, LHR, CDG, BER, FCO, LIS, DUB, ATH, VIE, AMS
+
+
+```{r}
+#| label: reto-1
+# TU CÓDIGO AQUÍ:
+g_vuelos <- graph_from_data_frame(d = aristas_vuelos,
+                      vertices = nodos_aeropuertos,
+                      directed = TRUE)
+
+V(g_vuelos)
+E(g_vuelos)
+
+V(g_vuelos)$name <- c("MAD", "LHR", "CDG", "BER", 
+                      "FCO", "LIS", "DUB", "ATH", "VIE", "AMS")
+```
+
+---
+
+## Reto 2: Filtrado por Grado  
+**Objetivo:** Identificar y mantener solo los aeropuertos principales.
+
+1. Calcula el grado de los nodos con la función `degree()`.
+2. Crea un nuevo grafo llamado `g_hubs` que contenga solo los nodos con **grado mayor que 3**.
+   *Pista:* Puedes usar la función `induced_subgraph()` o `delete_vertices()` (busca ayuda en google o en R).
+
+```{r}
+#| label: reto-2
+# TU CÓDIGO AQUÍ:
+grados <- degree(g_vuelos)
+indices <- which(grados > 3)
+subgrafo <- induced_subgraph(g_vuelos, vids = indices)
+
+plot(subgrafo)
+
+# usando delete_vertices()
+indices_no <- !indices
+
+subgrafo <- g_vuelos - V(g_vuelos)[indices_no]
+```
+
+---
+
+## Reto 3: Visualización con Layouts (7 min)
+**Objetivo:** Aplicar disposiciones espaciales mediante `plot()`.
+
+Dibuja el grafo `g_hubs` dos veces en la misma pantalla (`par(mfrow=c(1,2))`):
+1. Primero con un layout **Circular**.
+2. Segundo con un layout **Fruchterman-Reingold**.
+
+```{r}
+#| label: reto-3
+# TU CÓDIGO AQUÍ:
+
+coords <- layout_in_circle(g_vuelos)
+plot(g_vuelos, layout = coords)
+
+```
+
+---
+
+## Reto 4: Estilización Clásica  
+**Objetivo:** Asignar atributos visuales de forma manual y condicional.
+
+Modifica el grafo `g_vuelos` original para que:
+1. El **tamaño de los nodos** sea proporcional a sus pasajeros (puedes dividir por 4 para que no sean gigantes).
+2. El **color de las aristas** sea "red" si la distancia > 2000 y "grey80" en caso contrario.
+3. Las **etiquetas** de los nodos sean los nombres de las ciudades.
+
+```{r}
+#| label: reto-4
+# TU CÓDIGO AQUÍ:
+
+V(g_vuelos)$size <- V(g_vuelos)$pasajeros_m / 2
+
+E(g_vuelos)$color <- "grey80" 
+aristas_rojas <- E(g_vuelos)$distancia > 2000
+E(g_vuelos)[aristas_rojas]$color <- "red"
+
+E(g_vuelos)$color <- ifelse(E(g_vuelos)$distancia > 2000, "red", "grey80")
+
+V(g_vuelos)$label <- V(g_vuelos)$ciudad
+
+plot(g_vuelos)
+```

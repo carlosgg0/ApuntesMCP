@@ -1,0 +1,99 @@
+---
+title: "Resumen de ggplot2: El mercado inmobiliario en Texas"
+author: "A. Mora"
+format: html
+---
+
+## Introducción
+
+En este ejercicio aprenderemos los conceptos básicos de `ggplot2` usando un dataset más dinámico: `txhousing`. 
+
+>> dataset: información sobre ventas de casas en diferentes ciudades de Texas a lo largo de los años.
+
+
+```{r}
+#| label: setup
+#| message: false
+library(ggplot2)
+library(dplyr)
+
+# Usamos el dataset txhousing que viene con ggplot2
+data("txhousing")
+
+# Vamos a filtrar para quedarnos con un par de ciudades interesantes
+ciudades_interesantes <- c("Austin", "Houston", "Dallas", "San Antonio")
+datos_texas <- txhousing %>% 
+  filter(city %in% ciudades_interesantes) %>%
+  filter(year >= 2010) # Nos centramos en la última década del dataset
+
+head(datos_texas)
+```
+
+## 1. Gráfico simple (dos variables)
+
+Vamos a ver cómo han evolucionado los precios (mediana) en una sola ciudad (ej. Austin) a lo largo del tiempo.
+
+```{r}
+datos_austin <- datos_texas %>% filter(city == "Austin")
+
+ggplot(data = datos_austin, aes(x = date, y = median)) +
+  geom_point() +
+  geom_line()
+```
+
+> **Explicación:** `date` es una columna numérica que combina año y mes. Vemos una tendencia clara al alza con cierta estacionalidad.
+
+## 2. Gráfico con tres variables (Comparando ciudades)
+
+Ahora queremos comparar las 4 ciudades principales. Mapearemos la variable `city` al **color**.
+
+```{r}
+ggplot(data = datos_texas, aes(x = date, y = median, color = city)) +
+  geom_line() +
+  geom_point(alpha = 0.3) # Puntos más claritos para no tapar la línea
+```
+
+## 3. Personalización 
+
+
+- Cambiar colores.
+- Títulos descriptivos.
+- Cambiar formato $ en el eje Y.
+- Tema limpio y moderno.
+
+```{r}
+ggplot(data = datos_texas, aes(x = date, y = median, color = city)) +
+  # Geometrías con ajustes de estilo
+  geom_line(linewidth = 0.6) +
+  geom_point(size = 1, alpha = 0.5) +
+  
+  # Escalas de color y etiquetas
+  scale_color_viridis_d(option = "plasma", name = "Ciudad") +
+  scale_y_continuous(labels = scales::label_dollar()) +
+  
+  # Títulos y anotaciones
+  labs(
+    title = "Evolución del Precio de la Vivienda en Texas",
+    subtitle = "Precio mediano de venta (2010 - 2015)",
+    x = "Año",
+    y = "Precio Mediano ($)",
+    caption = "Fuente: TAMU Real Estate Center"
+  ) +
+  
+  # Aplicación de un tema profesional
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", color = "#2c3e50"),
+    legend.position = "top",
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "#f8f9fa", color = NA)
+  )
+```
+
+## Resumen  
+
+1.  **ggplot()**: Establece los datos.
+2.  **aes()**: Define el "mapeo" (qué variable va a qué propiedad visual).
+3.  **geoms**: Las capas físicas (puntos, líneas, barras).
+4.  **scales**: Controlan cómo se traducen los datos a colores o ejes.
+5.  **theme**: Controla toda la parte no-relacionada con los datos (fuentes, fondos, rejillas).

@@ -1,0 +1,16 @@
+# Introducción al Análisis de Redes Sociales
+
+```{r}
+library(igraph)
+library(tidygraph)
+library(ggraph)
+library(igraphdata)
+```
+
+```{r}
+data("karate")
+
+karate_tidy <- as_tbl_graph(karate)
+karate_tidy
+```
+
