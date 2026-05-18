@@ -1,0 +1,207 @@
+---
+title: "PROYECTO FINAL SNA: Auditoría Integral de Opinión Pública (Israel-Palestina) - PARTE 1"
+subtitle: " SNA Básico, Topología y Centralidad (Retos 1 a 5)"
+author: "xxxx"
+date: "2026-05-18"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: show
+    theme: lux
+    number-sections: true
+    embed-resources: true
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+#| label: setup-intro
+#| include: false
+```
+
+# Introducción y Contexto del Dataset
+
+Auditaremos los fundamentos de la red de Reddit sobre el conflicto
+Israel-Palestina: importación de dataset real de Kaggle - exploración de
+metadatos de igraph, métricas de topometría global y cálculo y análisis
+de centralidades locales.
+
+> \[!IMPORTANT\] **Nota sobre el Dataset:** Trabajaremos con un **sample
+> representativo de 5.000 comentarios** que mimetiza la estructura y
+> distribución del original de Kaggle (6.1 GB).
+
+------------------------------------------------------------------------
+
+# Fase 1: Fundamentos y Exploración de Objetos (SNA Básico)
+
+Antes de aplicar algoritmos complejos, debemos asegurar la correcta
+ingesta y comprensión anatómica de la red.
+
+## Carga de Datos y Librerías
+
+```{r}
+#| label: load-libs
+#| echo: true
+#| message: false
+
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+library(scales)
+
+reddit_data <-read_csv("data/reddit_israel_palestine_sample_large.csv")
+View(reddit_data)
+```
+
+## Creación y Conversión del Grafo
+
+**Reto 1:** Crea un Grafo (con metadatos) donde el nodo origen sea el
+autor (`author_name`) y el destino el subreddit (`subreddit`).
+Conviértelo a objeto `tidygraph`.
+
+Pistas: - Para importar a igraph recuerda que de un vértice el origen
+debe tener nombre `from` y el destino debe tener nombre `to`: tarea -
+renombrar y ponerlas como las dos primeras columnas
+
+-   usar `graph_from_data_frame()` con `directed = FALSE`
+-   `as_tbl_graph()`
+
+```{r}
+#| label: graph-creation
+
+grafo <- reddit_data |>
+  select(from = author_name, to = subreddit, everything()) |>
+  
+  graph_from_data_frame(directed = FALSE) |>
+  
+  as_tbl_graph()
+
+grafo
+  
+
+```
+
+## Inspección de Metadatos
+
+**Reto 2:** Inspecciona la red para responder a las siguientes preguntas
+estructurales: 1. Extrae los nombres de todos los atributos que tiene el
+Vértice 1 usando sintaxis de `igraph`. 2. Muestra los atributos de la
+Arista número 15. ¿Qué puntuación (`score`) tuvo ese comentario y a qué
+autor pertenece?
+
+Pistas: - usar `V` y `vertex_attr_names` para sus atributos - `E` y
+`edge_attr` para las aristas - `tail_of()` para obtener el autor origen
+de la arista,\
+- metadato `score` para extraer su puntuación
+
+```{r}
+#| label: metadata-inspection
+
+# Inserte su solución aquí
+vertex_attr_names(grafo)
+edge_attr(grafo)
+
+nombres_atributos <- V(grafo)[1]$name
+nombres_atributos
+
+vertex_attr(grafo, name = "name", index = 1)
+
+# Arista 15
+
+edge_attr(grafo, index = 15)
+scores <- edge_attr(grafo, name = "score")
+
+E(grafo)[15]$score
+
+tail_of(grafo, es=15)
+
+tail_of(grafo, es = C(15, 16))
+
+tail_of(grafo, es = c(1:ecount(grafo)))
+
+indices_contiene_291 <- which(grep("291", tail_of(grafo, es = c(1:ecount(grafo)))))
+
+```
+
+------------------------------------------------------------------------
+
+# Fase 2: Topometría de la Red (Métricas Globales)
+
+**Reto 3:** Calcula las siguientes métricas globales del ecosistema: 1.
+Densidad de la red. 2. Diámetro. 3. Coeficiente de Clustering
+(Transitividad global). 4. Distancia media (Average path length). 5.
+Número de componentes conectados (¿Está la red fragmentada en islas
+aisladas?).
+
+Pistas: - `edge_density()` - `diameter()` -
+`transitivity(type = "global")` - `mean_distance()` -
+`count_components()`
+
+```{r}
+#| label: global-metrics
+#| 
+library(tibble) 
+
+mi_grafo <- reddit_data |> as_tbl_graph()
+
+metricas <- tibble(
+  densidad_red       = edge_density(mi_grafo),
+  diametro           = diameter(mi_grafo),
+  coef_clustering    = transitivity(mi_grafo, type = "global"),
+  distancia_media    = mean_distance(mi_grafo),
+  numero_componentes = count_components(mi_grafo)
+)
+
+
+metricas
+```
+
+------------------------------------------------------------------------
+
+# Fase 3: Tidygraph y Centralidad (Métricas Locales)
+
+Usaremos el flujo moderno de `tidygraph` (`activate()`) para auditar la
+importancia de los usuarios.
+
+## Cálculo de Centralidades
+
+**Reto 4:** Añade al objeto `g_tidy` las métricas de grado, betweenness,
+pagerank, closeness y eigen.
+
+Pistas: - `activate(nodes)` - `mutate()` usando `centrality_degree()`,
+`centrality_betweenness()`, `centrality_pagerank()`,
+`centrality_closeness()` y `centrality_eigen()`
+
+```{r}
+#| label: centrality-audit
+
+# Inserte su solución aquí
+
+```
+
+## Preguntas de Conocimiento (Nodes)
+
+**Reto 5:** Responde con código R:
+
+1.  ¿Coincide el líder por Grado con el líder por PageRank? Justifica
+    por qué ocurre.
+
+2.  ¿Quién es el actor clave para la difusión (mayor Betweenness) y qué
+    posición ocupa en PageRank?
+
+Pistas: - `as_tibble()` para pasar el grafo con centralidades a una
+tabla de datos normal - `arrange(desc(...))` para ordenar y `slice(1)` o
+`head(1)` para coger al líder - ordenar por pagerank para calcular el
+ranking exacto de cualquier usuario
+
+```{r}
+# Inserte su solución aquí
+
+```
+
+------------------------------------------------------------------------
+
+> **Fin de la Parte 1:**
