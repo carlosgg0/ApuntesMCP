@@ -1,0 +1,547 @@
+---
+title: "Ejercicio de Clase: Análisis de Sentimiento y Redes Semánticas"
+subtitle: "SNA — Texto y Emoción en Redes Sociales"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    code-fold: show
+    highlight-style: github
+    self-contained: true
+---
+
+> **Duración estimada:** 
+> **Paquetes necesarios:** `tidyverse`, `tidytext`, `widyr`, `tidygraph`, `ggraph`, `ggforce`
+
+------------------------------------------------------------------------
+
+## Contexto
+
+Imagina que eres un analista de opinión pública y tienes que responder una pregunta clave:
+
+> *¿Cómo hablan en redes sociales los distintos actores sobre la **Ley de Vivienda** en España?*
+
+Los dos bandos en debate son:
+
+-   🏠 **Inquilinos / Gobierno**: defienden la ley como una conquista social.
+-   🏦 **Propietarios / Oposición**: la tachan de intervencionismo peligroso.
+
+En este ejercicio vamos a:
+
+1.  **Medir el sentimiento** de tres frases reales del debate.\
+2.  **Visualizar** qué palabras se agrupan juntas en una red semántica.
+
+------------------------------------------------------------------------
+
+## Paso 1: Instalar y cargar paquetes
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+# Instala solo si no los tienes:
+# install.packages(c("tidyverse","tidytext","widyr","tidygraph","ggraph","ggforce"))
+
+library(tidyverse)
+library(tidytext)
+library(widyr)
+library(tidygraph)
+library(ggraph)
+library(ggforce)
+```
+
+Paquete que pueden ser necesarios:
+
+*   **`tidytext`**: Minería de textos convirtiendo documentos en tablas de "palabra por fila".
+*   **`widyr`**: Permite calcular correlaciones y co-ocurrencias de palabras de forma sencilla.
+*   **`quanteda`**: El estándar para análisis cuantitativo de texto (manejo de corpus y matrices).
+*   **`quanteda.textstats`** y **`quanteda.textplots`**: Extensiones para cálculos estadísticos y gráficos de texto avanzados.
+*   **`stm`**: Permite realizar Modelado de Tópicos Estructural, relacionando temas con metadatos.
+*   **`SnowballC`**: Motor para realizar *stemming* (reducir palabras a su raíz) en múltiples idiomas.
+
+## Paso 2: Nuestro "diccionario de emociones"
+
+Un **lexicón** es un diccionario donde cada palabra lleva una puntuación emocional: - **Positivo (+):** esperanza, victoria, justicia… - **Negativo (−):** crisis, inseguridad, destruyendo…
+
+```{r}
+#| label: lexicon
+
+lexicon_esp <- tibble(
+  word  = c("esperanza","victoria","histórica","garantiza","futuro",
+            "digno","protege","hogar","justicia","social","derechos",
+            "inseguridad","intervencionismo","destruyendo","crisis",
+            "pobreza","drama","fracaso","okupación","castiga",
+            "ideológico","especulación","abusiva"),
+  valor = c(4, 3, 2, 2, 1,
+            2, 2, 2, 2, 1, 1,
+            -3, -2, -4, -3,
+            -3, -3, -4, -3, -2,
+            -1, -2, -3)
+)
+
+ 
+
+```
+
+
+
+¿Cuántas palabras positivas y negativas tenemos?
+
+```{r}
+#inserta tu código
+
+library(tidyverse)
+
+num_positivas <- lexicon_esp |> 
+  filter(valor >= 0) |> 
+  summarise(num_positivas = n())
+
+num_negativas <- lexicon_esp |> 
+  filter(valor < 0) |> 
+  summarise(num_negativas = n())
+
+```
+
+::: callout-note
+## 💡 Reflexiona
+
+¿Qué otras palabras añadirías al diccionario para capturar mejor el debate sobre vivienda? Añade simplemente algunas para que quede claro que el diccionario es dinámico.
+
+```{r}
+#inserta tu código 
+
+lexicon_esp
+
+mi_lexicon_esp <- tibble(
+  word = c("progreso", "injusticia"),
+  valor = c(3, -4)
+)
+lex <- rbind(lexicon_esp, mi_lexicon_esp)
+
+
+```
+:::
+
+
+## Paso 3: Los textos del debate
+
+```{r}
+#| label: textos
+
+
+textos <- tibble(
+  id    = 1:7,
+  bando = c("Inquilinos/Gobierno", "Propietarios/Oposición", "Propietarios/Oposición", "Propietarios/Oposición",
+            "Inquilinos/Gobierno", "Propietarios/Oposición", "Inquilinos/Gobierno"),
+  texto = c(
+    "Esta ley es la única esperanza para nuestros jóvenes; una victoria histórica que garantiza un futuro digno, protege el acceso al hogar y acaba con la especulación abusiva.",
+    "El intervencionismo y la inseguridad jurídica están destruyendo el mercado inmobiliario, provocando una crisis de oferta sin precedentes.",
+    "La ley del gobierno es un fracaso absoluto que protege la okupación y castiga a los pequeños propietarios con un intervencionismo ideológico.",
+    "La inseguridad jurídica y el intervencionismo descontrolado son un peligro real para el mercado inmobiliario y la propiedad privada.",
+    "Los jóvenes no pueden pagar el alquiler por culpa de la especulación inmobiliaria y la falta de vivienda pública.",
+    "La propiedad privada está en riesgo por las leyes intervencionistas que solo benefician a los okupas.",
+    "Necesitamos una ley de vivienda que garantice el derecho al hogar de forma justa y sostenible para todos."
+  )
+)
+
+textos |> select(id, bando, texto)
+
+```
+
+
+
+
+
+## Paso 4: Tokenización → la "palabra suelta"
+
+El primer paso del NLP es romper el texto en palabras individuales (**tokens**). Usa unnest_tokens y guarda resultado en variable `tokens`:
+
+```{r}
+#| label: tokenizacion
+#inserta tu código 
+
+tokens <- textos |> 
+  unnest_tokens(words, texto)
+
+```
+
+# Cuántas palabras genera cada frase
+
+```{r}
+#inserta tu código 
+
+tokens |> 
+  group_by(id) |> 
+  summarise(numero_palabras=n())
+
+```
+
+
+
+
+> Preprocesamiento Avanzado (Stemming y Stopwords)
+
+En análisis reales, no filtramos palabras a mano. Usamos técnicas automáticas:
+
+1. **Stopwords**: Eliminar palabras sin significado (el, la, de, que...).
+2. **Stemming**: Reducir palabras a su raíz (ej: "protege", "protección" → "proteg").
+
+```{r}
+#| label: stemming
+
+# Usamos la lista de stopwords de tidytext para español
+data("stop_words")
+stop_words_es <- get_stopwords(language = "es")
+
+tokens_limpios <- tokens |>
+  anti_join(stop_words_es, by = c("word" = "word")) |>
+  mutate(stem = wordStem(word, language = "spanish"))
+
+tokens_limpios |> 
+  select(id, word, stem) |> 
+  slice_head(n = 5)
+```
+
+
+
+
+::: {.callout-tip}
+## ¿Por qué usar Stemming?
+El stemming ayuda a que "propietario" y "propietarios" se cuenten como la misma unidad, reduciendo la dispersión del vocabulario.
+:::
+
+
+
+
+## Paso 5: Calcular el sentimiento
+
+Cruzamos los tokens con el lexicón.
+
+Solo las palabras que **aparecen en el diccionario** contribuyen a la puntuación. Calcula la puntuación de cada texto.
+
+Guarda en una variable llamada `resultado` el sentimiento de cada texto.
+
+```{r}
+#inserta tu código 
+
+lexicon_esp
+
+tokens |> 
+  inner_join(lexicon_esp, by = "word") |> 
+  group_by(id) |> 
+  summarise(sentimiento=sum(valor))
+
+tokens
+```
+
+Calcula el sentimiento de cada bando. Guarda en una variable llamada `resultado_bando` el sentimiento de cada texto. :
+
+```{r}
+#inserta tu código 
+
+resultado_bando <- mi_tokens |>
+  inner_join(lexicon_esp, by = "word") |> 
+  group_by(bando) |> 
+  summarise(sentimiento = sum(valor))
+
+resultado_bando
+```
+
+### Visualización del sentimiento
+
+Con `resultado` queremos:
+
+-   gráfico de barras que me saque con dos colores si el sentimiento es positivo o negativo
+-   la altura de la barra dependerá de la puntuación
+-   usa ggplot + geom_col
+
+```{r}
+#inserta tu código 
+
+resultado |> 
+  ggplot(aes(x = id, y = sentimiento, fill = sentimiento > 0)) + 
+  geom_col() +
+  geom_text(aes(label=sentimiento))
+
+```
+
+
+## Paso 6: Red Semántica — ¿Qué palabras "van juntas"?
+
+Ahora construimos una **red de palabras** donde dos palabras están conectadas si aparecen frecuentemente en los mismos textos. Esto revela los **clusters de significado** de cada bando.
+
+-   tomamos los tokens
+
+-   quitamos palabras muy cortas y (logitud menor o igual que 3)
+
+-   quitamos stopwords básicas que veas van saliendo
+
+-   usamos pairwise_cor para calcular las correlaciones
+
+-   guarda las correlaciones en word_cors
+
+```{r}
+#inserta tu código 
+
+word_cors <- mi_tokens |> 
+  group_by(word) |> 
+  filter(n() >= 20) |> 
+  pairwise_cor(term, document, sort >= TRUE)
+```
+
+Creamos la red semantica entre las palabras (mira material de book).
+
+-   quedate con las palabras que su correlación sea mayor que 0
+
+-   convierte en tbl_graph
+
+-   añade la comunidad usando el algoritmo de louvain
+
+-   dibuja el grado
+
+```{r}
+ 
+
+```
+
+------------------------------------------------------------------------
+
+# Extra
+
+El ecosistema `quanteda` (Exploración de Corpus)
+
+`quanteda` es el estándar industrial para R. Nos permite hacer búsquedas rápidas y análisis estadísticos.
+
+* Crear el Corpus y KWIC
+
+**KWIC** (Keywords in Context) nos permite ver cómo se usa una palabra en su contexto real.
+
+```{r}
+#| label: quanteda-corpus
+
+# Crear objeto corpus
+mi_corpus <- corpus(textos, text_field = "texto")
+
+# Buscar contexto de "ley"
+kwic_ley <- kwic(tokens(mi_corpus), pattern = "ley")
+head(kwic_ley)
+```
+
+* (N-gramas)
+
+¿Qué palabras suelen ir de la mano?
+
+```{r}
+#| label: colocaciones
+
+mis_tokens <- tokens(mi_corpus, remove_punct = TRUE) |> 
+  tokens_remove(stop_words_es$word)
+
+# IMPORTANTE: Con pocos textos, bajamos min_count a 1 para ver resultados
+colocaciones <- textstat_collocations(mis_tokens, size = 2, min_count = 1)
+head(colocaciones)
+```
+
+::: {.callout-note}
+Como ejemplo es pequeño, hemos forzado `min_count = 1` para poder ver resultados.
+:::
+
+---
+
+* Topic Modeling (STM) - "Pinceladas Avanzadas"
+
+El **Structural Topic Modeling** (STM) permite que los tópicos dependan de metadatos (como el bando).
+
+```{r}
+#| label: stm-prepa
+#| message: false
+
+# Preparar DFM (Document-Feature Matrix)
+mi_dfm <- dfm(mis_tokens)
+
+# Convertir a formato STM
+out <- convert(mi_dfm, to = "stm")
+
+# Entrenar modelo con 2 tópicos
+modelo_stm <- stm(documents = out$documents, 
+                  vocab = out$vocab, 
+                  K = 2, 
+                  verbose = FALSE)
+
+# Ver palabras clave por tópico
+labelTopics(modelo_stm)
+
+# estructura
+str(modelo_stm, max.level = 1)
+
+#tópico es el más frecuente en todo tu corpus.
+colMeans(modelo_stm$theta) 
+
+```
+
+> stm() es una lista compleja que contiene toda la estructura estadística del modelo. Lo más importante que almacena es:
+
+* theta (Distribución de Tópicos por Documento): Es una matriz donde cada fila es un documento y cada columna un tópico. Te dice qué porcentaje de cada tema tiene cada frase (ej: el Documento 1 es 80% Tópico 1 y 20% Tópico 2).
+
+* beta (Distribución de Palabras por Tópico): Contiene la probabilidad de que cada palabra del vocabulario aparezca en cada tópico. Es lo que usamos para saber "de qué va" cada tema.
+
+* mu y sigma: Almacenan la media y la covarianza de la prevalencia de los tópicos (cómo se relacionan los temas entre sí y con los metadatos).
+
+* vocab: La lista de palabras únicas que el modelo ha procesado.
+
+
+
+
+Visualización de los tópicos:
+
+```{r}
+#| label: plot-stm
+#| fig-height: 4
+
+plot(modelo_stm, type = "labels", main = "Tópicos detectados en el debate")
+```
+
+
+# ️ Ejercicio Adicional 
+
+Recolección de Datos en Redes Sociales: X, reddit
+
+
+## 1. Extracción de X (Twitter) con `rtweet`
+
+X requiere una cuenta de desarrollador y una API Key. Una vez configurada:
+
+```r
+library(rtweet)
+
+# 1. Autenticación (se abre ventana en navegador)
+# auth_setup_default() 
+
+# 2. Buscar tweets sobre un tema
+tweets_vivienda <- search_tweets(
+  q = "#GuerraIran",
+  n = 100,
+  include_rts = FALSE,
+  lang = "es"
+)
+
+# 3. Limpiar y preparar para el análisis
+textos_x <- tweets_vivienda |>
+  select(id = status_id, texto = full_text, screen_name, created_at) |>
+  mutate(texto = str_replace_all(texto, "http\\S+", "")) # Quitar URLs
+```
+
+## 2. Extracción de Reddit con `RedditExtractoR`
+
+Reddit es más abierto y no requiere API Keys para búsquedas básicas:
+
+> probar en clase - analizar lo que devuelve
+
+
+El flujo de extracción de los hilos de un temas sería:
+
+```{r}
+library(RedditExtractoR)
+# 1. Buscar hilos sobre un tema (usamos palabras genéricas para asegurar resultados)
+hilos <- find_thread_urls(keywords = "Guerra Iran", sort_by = "new")
+
+# 2. Filtrar hilos que tengan al menos un comentario
+hilos_con_comentarios <- hilos |> filter(comments > 0)
+
+if(nrow(hilos_con_comentarios) > 0) {
+  # Obtener el contenido (comentarios) de los hilos que sí tienen actividad
+  contenido <- get_thread_content(hilos_con_comentarios$url[1:min(3, nrow(hilos_con_comentarios))])
+  
+  # 3. Preparar para el análisis
+  if(!is.null(contenido$comments) && nrow(contenido$comments) > 0) {
+    textos_reddit <- contenido$comments |>
+      select(id = comment_id, texto = comment, autor = author, date)
+  } else {
+    message("No se pudieron extraer los comentarios de los hilos seleccionados.")
+  }
+} else {
+  message("No se encontraron hilos con comentarios. Prueba con otro tema.")
+}
+
+```
+
+
+## 3. Flujo de Preprocesamiento Universal
+
+Una vez tienes los datos de cualquier fuente, el flujo es siempre el mismo:
+
+
+### Ejercicio Adicional (os coloco una tarea en CV con un "deadline"):
+
+
+Extraer datos y aplicar: 
+
+1. **Preprocesamiento**: Pasar a minúsculas, quitar URLs, menciones (@) y hashtags (#) si solo quieres el texto.
+2. **Tokenización**: `unnest_tokens()` de `tidytext`.
+3. **Limpieza**: `anti_join(stop_words_es)`.
+4. **Análisis**: 
+   - Sentimiento (lexicon).
+   - Co-ocurrencia (redes).
+   - Tópicos (`stm` o `quanteda`).
+   
+   
+   
+>> Cada alumno podrá llevarse al control 2 este ejercicio completo resuelto en .qmd incluido el ejercicio adicional
+
+
+
+# Anexo: Análisis de Emociones Complejo (NRC)
+
+A diferencia del análisis simple de "positivo/negativo", el diccionario **NRC** permite detectar 8 emociones básicas. En español, lo más fácil es usar el paquete `syuzhet`.
+
+### 1. Obtener el perfil emocional
+Usamos la función `get_nrc_sentiment` que ya conoce el idioma español:
+
+```{r}
+#| label: nrc-emociones
+
+library(syuzhet)
+# Obtenemos las emociones de nuestros textos
+emociones_vivienda <- get_nrc_sentiment(textos$texto, language = "spanish")
+
+# Combinamos con los metadatos (bando)
+perfil_emocional <- cbind(textos |> select(bando), emociones_vivienda)
+
+# Resumen por bando (quitamos columnas de valencia para centrarnos en emociones)
+resumen_emociones <- perfil_emocional |>
+  group_by(bando) |>
+  summarise(across(anger:trust, sum)) |>
+  pivot_longer(cols = anger:trust, names_to = "emocion", values_to = "puntuacion")
+
+head(resumen_emociones)
+```
+
+### 2. Visualización: El "Mapa del Sentimiento"
+
+Podemos ver qué emociones predominan en cada lado del debate:
+
+```{r}
+#| label: plot-nrc
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(resumen_emociones, aes(x = emocion, y = puntuacion, fill = bando)) +
+  geom_col(position = "dodge") +
+  coord_polar() + # Un gráfico radial suele ser muy visual para perfiles emocionales
+  theme_minimal() +
+  labs(
+    title = "Perfil Emocional del Debate sobre Vivienda",
+    subtitle = "Basado en el lexicón NRC (8 emociones básicas)",
+    x = "", y = "", fill = "Bando"
+  ) +
+  scale_fill_brewer(palette = "Set1")
+```
+
+::: {.callout-tip}
+## 💡 Interpretación
+- ¿Qué bando muestra más **miedo (fear)** o **ira (anger)**?
+- ¿Qué bando se asocia más con la **confianza (trust)** o la **alegría (joy)**?
+- Los gráficos radiales nos permiten ver la "huella dactilar" emocional de cada discurso de un vistazo.
+:::

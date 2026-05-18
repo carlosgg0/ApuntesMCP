@@ -1,0 +1,38 @@
+---
+title: "proyecto_ts_australia"
+format: html
+---
+
+# Fase 1: Preparación de la Serie Temporal
+
+## Tarea 1.1: Agregación de datos
+
+```{r}
+library(fpp3)
+library(forecast)
+library(tseries)
+library(TTR)
+
+data("vic_elec")
+
+df <- vic_elec |>
+  as_tibble() |>
+  group_by(Date) |> 
+  summarise(demand = sum(Demand))
+
+df
+```
+
+# Tarea 1.2: Creación del objeto ts
+
+```{r}
+
+ts_australia <- ts(
+  data = df$demand,
+  frequency = 7,
+  start = c(2012, 1, 1)
+)
+
+ts_australia
+```
+

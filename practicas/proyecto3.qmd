@@ -73,8 +73,10 @@ E(US)[1]
 6.  Encuentra el trayecto con mayor número de pasajeros.
 7.  **Reto - Ocupación**: Calcula el ratio de ocupación de los vuelos (`Passengers / Seats`). Añade este valor como un nuevo atributo de arista llamado `Occupancy` e identifica la ruta con la mejor ocupación promedio. (Asegúrate de filtrar aquellos vuelos con 0 asientos para evitar divisiones por cero).
 
-8.  **Reto - Dominio de Mercado**: Primero, identifica el aeropuerto (hub) que tiene el mayor número de vuelos de salida (out-degree). Una vez identificado, determina cuál es la compañía aérea
-(`Carrier`) que opera más vuelos desde ese aeropuerto específico.
+8.  **Reto - Dominio de Mercado**: Primero, identifica el aeropuerto (hub) 
+que tiene el mayor número de vuelos de salida (out-degree). Una vez identificado, 
+determina cuál es la compañía aérea (`Carrier`) que opera más vuelos desde ese
+aeropuerto específico.
 
 9.  **Reto - Perfil de Distancia**: Calcula la distancia media (`Distance`) de los vuelos operados por cada compañía aérea (`Carrier`). ¿Cuál es la compañía que realiza, en promedio, los trayectos más largos?
 
@@ -117,7 +119,40 @@ ind <- which.max(E(US)$Passengers)
 E(US)[ind]
 
 # 7.
-E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
+no_vacias <- E(US)$Seats != 0
+E(US)$Occupancy[no_vacias] <- E(US)$Passengers[no_vacias] / E(US)$Seats[no_vacias]
+E(US)$Occupancy[!no_vacias] <- NA
+
+
+# identifica la ruta con la mejor ocupación promedio
+ind_max <- which.max(E(US)$Occupancy)
+E(US)[ind_max]
+
+
+# 8. Identifica el aeropuerto que tiene el mayor número de vuelos de salida.
+# Una vez identificado, encontrar la compañía aérea (Carrier) que opera más
+# vuelos desde ese aeropuerto específico.
+
+grados <- degree(US, mode = "out")
+ind_max <- which.max(grados)
+v_atl <- V(US)[ind_max]
+
+vuelos_desde_atl <- E(US)[v_atl %->% V(US)]
+sort(table(vuelos_desde_atl$Carrier), decreasing = TRUE)[1]
+
+# 9. Calcula la distancia media (Distance) de los vuelos operados por cada
+# compañía aérea (Carrier). ¿Cuál es la compañía que realiza, en promedio,
+# los trayectos más largos?
+
+US |>
+  as_tbl_graph() |>
+  activate(edges) |>
+  as_tibble() |> # Aquí nos quedamos únicamente con las aristas
+  group_by(Carrier) |>
+  summarise(distancia_media = mean(Distance)) |>
+  arrange(desc(distancia_media)) |>
+  slice_head(n=1)
+
 ```
 
 ---
@@ -133,6 +168,16 @@ E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
 
 ```{r}
 #| label: ex-3
+
+# 1. De los primeros 20 vértices, identifica ciudades con "Angeles"
+indices <- which(grepl("Angeles", V(US)$City[1:20]))
+V(US)[indices]$name
+V(US)[indices]$City
+
+# 2. Busca ciudades que empiecen por "Wash"
+indices <- which(grepl("^Wash", V(US)$City))
+V(US)[indices]$name
+V(US)[indices]$City
 ```
 
 ### Ejercicio 4: Operadores de Selección y Edición
@@ -144,6 +189,13 @@ E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
 
 ```{r}
 #| label: ex-4
+
+# 1. Conexiones entre "JFK" y "BOS" (ambos sentidos)
+length(E(US)["JFK" %--% "BOS"])
+
+# 4. Eliminar la conexión directa entre "BJC" y "MIA".
+US <- US - E(US)["BJC" %--% "MIA"]
+E(US)["BJC" %--% "MIA"]
 ```
 
 ### Ejercicio 5: Flujos entre Estados (California a Nueva York)
@@ -153,6 +205,8 @@ E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
 
 ```{r}
 #| label: ex-5
+
+
 ```
 
 ---
@@ -166,6 +220,12 @@ E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
 
 ```{r}
 #| label: ex-6
+
+# 1. Aeropuertos alcanzables desde Las Vegas con exactamente 1 escala
+indices <- which(grepl("Vegas", V(US)$City))
+vecinos_vegas <- ego(US, order = 2, nodes = indices, mode = "out")
+# red <- induced_subgraph(US, unlist(vecinos_vegas))
+names(vecinos_vegas[[1]])
 ```
 
 ### Ejercicio 7: Morphing y Entornos locales
@@ -175,6 +235,18 @@ E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
 
 ```{r}
 #| label: ex-7
+
+# 1. Identifica y marca los nodos del camino más corto entre Seattle
+# y Miami
+id_SEA <- which(grepl("SEA", V(US)$name))
+id_MIA <- which(grepl("MIA", V(US)$name))
+grafo_camino <- US |>
+  as_tbl_graph() |>
+  activate(nodes) |>
+  mutate(en_ruta = FALSE) |>
+  morph(to_shortest_path, from = id_SEA, to = id_MIA) |>
+  mutate(en_ruta = TRUE) |>
+  unmorph()
 ```
 
 ### Ejercicio 8: Visualización Temática con ggraph
@@ -185,6 +257,30 @@ E(US)$Occupancy <- E(US)$Passengers / E(US)$Seats
 
 ```{r}
 #| label: ex-8
+
+library(stringr)
+
+grados <- degree(US)
+indices_50 <- grados > 50
+V(US)[indices_50]
+red <- induced_subgraph(US, vids = V(US)[indices_50])
+
+res <- red |>
+  as_tbl_graph() |>
+  activate(nodes) |>
+  mutate(estado = sapply(str_split(City, ","), function(x) {x[2]})) |>
+  mutate(grado = centrality_degree())
+
+# cities <- str_split(V(US)$City, ",")
+# estados <- sapply(cities, function(x) {
+#   return(str_trim(x[2]))
+# })
+
+res |>
+  ggraph(layout = "fr") +
+  geom_node_point(aes(color = estado, size = grado)) +
+  geom_edge_link(aes(edge_width = Passengers), color = "gray", alpha = 0.6) +
+  theme_graph()
 ```
 
 ---
