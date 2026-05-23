@@ -1,0 +1,215 @@
+---
+title: "Proyecto Práctico 2: Recomendador de Series con SVD"
+subtitle: "Análisis de Redes y Modelización de Sistemas"
+author: "xxx"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: flatly
+    self-contained: true
+---
+
+## Introducción y Objetivos
+
+En el **Proyecto Práctico 1** implementaste un Filtrado Colaborativo Basado en Usuarios (*User-Based CF*). Comprobaste que funciona bien, pero que consume muchos recursos al tener que comparar a todos los usuarios entre sí en tiempo real.
+
+Para solucionar este cuello de botella, el equipo de ingeniería de **Streamly** ha decidido experimentar con **Modelos de Factores Latentes** utilizando la técnica de **Descomposición en Valores Singulares (SVD)**.
+
+El objetivo de este proyecto es:
+1.  **Imputar los valores faltantes (`NA`)** de nuestra matriz para poder aplicar SVD.
+2.  **Descomponer la matriz** en factores latentes utilizando álgebra lineal de R.
+3.  **Estimar la calificación** del `Usuario_1` para `The Office` usando SVD y compararla con el método basado en usuarios.
+4.  **Interpretar visual y analíticamente el espacio latente** descubierto por SVD, entendiendo qué conceptos ocultos representan sus dimensiones.
+
+---
+
+## 1. Carga de Datos y Dataset Unificado
+
+Para asegurar la consistencia y poder comparar los resultados de ambos paradigmas, utilizaremos exactamente la misma matriz de 50 usuarios y 20 series del Proyecto 1.
+
+Ejecuta el bloque a continuación para cargar los datos:
+
+```{r}
+#| label: data-generation
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(knitr)
+
+# Configuración del Catálogo (Misma Semilla 2026)
+set.seed(2026)
+n_usuarios <- 50
+n_series   <- 20
+
+series_names <- c(
+  "Stranger Things", "Breaking Bad", "Game of Thrones", "The Last of Us", "Wednesday",
+  "Succession", "Friends", "Black Mirror", "The Office", "Squid Game",
+  "Dark", "Rick and Morty", "The Mandalorian", "Better Call Saul", "House of the Dragon",
+  "Chernobyl", "The Crown", "Attack on Titan", "Narcos", "Mindhunter"
+)
+
+# Generamos usuarios con perfiles
+M <- matrix(NA, nrow = n_usuarios, ncol = n_series)
+rownames(M) <- paste0("Usuario_", 1:n_usuarios)
+colnames(M) <- series_names
+
+for (u in 1:n_usuarios) {
+  perfil <- u %% 3
+  if (perfil == 1) {
+    votos <- sample(c(1:2, NA), n_series, replace = TRUE, prob = c(0.15, 0.15, 0.70))
+    votos[c(1, 4, 8, 11, 12, 16, 20)] <- sample(4:5, 7, replace = TRUE)
+  } else if (perfil == 2) {
+    votos <- sample(c(1:2, NA), n_series, replace = TRUE, prob = c(0.15, 0.15, 0.70))
+    votos[c(2, 6, 7, 9, 14, 17, 19)] <- sample(4:5, 7, replace = TRUE)
+  } else {
+    votos <- sample(c(1:5, NA), n_series, replace = TRUE, prob = c(0.1, 0.1, 0.2, 0.15, 0.15, 0.3))
+  }
+  M[u, ] <- votos
+  
+  non_na <- which(!is.na(M[u, ]))
+  if (length(non_na) < 4 || var(M[u, non_na], na.rm = TRUE) == 0) {
+    M[u, c(1, 2, 6, 7)] <- c(5, 2, 4, 1)
+  }
+}
+
+# Forzamos los tres usuarios clave
+M["Usuario_1", "The Office"]       <- NA
+M["Usuario_1", "Stranger Things"]  <- 5
+M["Usuario_1", "Black Mirror"]     <- 5
+M["Usuario_1", "Dark"]             <- 4
+M["Usuario_1", "Friends"]          <- 1
+
+M["Usuario_2", "The Office"]       <- 2
+M["Usuario_2", "Stranger Things"]  <- 4
+M["Usuario_2", "Black Mirror"]     <- 5
+M["Usuario_2", "Dark"]             <- 5
+M["Usuario_2", "Friends"]          <- 1
+
+M["Usuario_3", "The Office"]       <- 5
+M["Usuario_3", "Stranger Things"]  <- 1
+M["Usuario_3", "Black Mirror"]     <- 2
+M["Usuario_3", "Dark"]             <- 1
+M["Usuario_3", "Friends"]          <- 5
+```
+
+---
+
+## 2. Imputación e Implementación de SVD
+
+La descomposición SVD clásica requiere que la matriz no contenga valores faltantes (`NA`). Como ingenieros de Streamly, aplicaremos una **imputación básica por columna**: rellenaremos cada `NA` con el promedio de votaciones de esa serie en particular.
+
+### Ejercicio 2.1: Imputación y Descomposición con R
+
+Escribe un código en R que realice los siguientes pasos:
+1.  Copia la matriz `M` original en una nueva variable llamada `M_filled`.
+2.  Mediante un bucle o una función vectorizada, identifica los `NA` de cada columna y reemplázalos por la media de esa columna (omitiendo los `NA` en el cálculo del promedio).
+3.  Aplica la función nativa `svd()` sobre la matriz imputada `M_filled` para obtener los autovectores y valores singulares.
+
+```{r}
+# Escribe aquí tu código en R para imputar la matriz y aplicar SVD
+# 1. Imputación básica: Rellenamos NAs con la media de la columna
+M_filled <- M
+for (i in 1:ncol(M)) {
+  M_filled[is.na(M_filled[,i]), i] <- mean(M_filled[,i], na.rm = TRUE)
+}
+
+# 2. Descomposición SVD con k=2 factores latentes
+svd_result <- svd(M_filled)
+k    <- 2
+U_k  <- svd_result$u[, 1:k]
+D_k  <- diag(svd_result$d[1:k])
+V_k  <- svd_result$v[, 1:k]
+
+```
+
+---
+
+## 3. Predicción con Reducción Dimensional ($k=2$)
+
+Una vez calculada la descomposición $M_{filled} = U \Sigma V^T$, podemos reducir la dimensionalidad seleccionando únicamente los **$k = 2$ primeros factores latentes**. 
+
+La aproximación de rango truncado de la matriz se obtiene como:
+
+$$M_{pred} = U_k \cdot \Sigma_k \cdot V_k^T$$
+
+Donde $U_k$ son las primeras $k$ columnas de $U$, $\Sigma_k$ es la matriz diagonal con los primeros $k$ valores singulares, y $V_k$ son las primeras $k$ columnas de $V$.
+
+### Ejercicio 3.1: Reconstrucción y Comparación en R
+
+Escribe un código en R que:
+1.  Extraiga las submatrices truncadas $U_k$, $\Sigma_k$ y $V_k$ para un número de factores latentes $k = 2$.
+2.  Multiplique las tres submatrices para reconstruir la matriz de predicciones global ($M_{pred}$). Asigna de nuevo los nombres de filas y columnas correspondientes a los usuarios y series.
+3.  Imprima el valor predicho estimado por SVD para el **`Usuario_1`** en la serie **`The Office`**.
+
+```{r}
+# Escribe aquí tu código en R para reconstruir la matriz con k=2 y predecir la nota
+
+# 3. Reconstrucción de la Matriz (Predicción)
+M_pred <- U_k %*% D_k %*% t(V_k)
+rownames(M_pred) <- rownames(M)
+colnames(M_pred) <- colnames(M)
+
+M_pred["Usuario_1", "The Office"]
+```
+
+1.  **Predicción Obtenida:** ¿Qué calificación predice SVD ($k=2$) para el `Usuario_1` y *The Office*?
+2.  **Comparación de Métodos:** En el Proyecto 1, el recomendador de Filtrado Colaborativo Basado en Usuarios predijo una calificación de **3.31** para este mismo cruce. ¿Qué diferencias observas con la predicción de SVD y cómo valoras este cambio en el contexto de una recomendación de series?
+
+```text
+[Escribe tu respuesta y comparación aquí]
+```
+
+---
+
+## 4. Interpretación del Espacio Latente
+
+Una de las grandes ventajas de SVD es que los factores matemáticos que encuentra en el proceso de optimización corresponden a **características o gustos latentes ocultos** que ordenan el catálogo.
+
+La matriz $V_k$ (autovectores de ítems) contiene las coordenadas de nuestras **20 series** en el nuevo espacio de $k=2$ dimensiones (Factores).
+
+### Ejercicio 4.1: Visualización y Clasificación de Factores en R
+
+Escribe un script en R que:
+1.  Cree un *dataframe* que asocie el nombre de cada serie con sus valores en el **Factor 1** y el **Factor 2** (las columnas 1 y 2 de la matriz $V$ obtenida de SVD).
+2.  Utilice `ggplot2` para dibujar un gráfico de dispersión bidimensional (*scatter plot*) de las series en el espacio latente. 
+    *   *Eje X:* Coordenadas del Factor 1.
+    *   *Eje Y:* Coordenadas del Factor 2.
+    *   *Etiquetas:* Añade el nombre de cada serie al lado de su punto usando `geom_text(aes(label = Serie), vjust = 1.5)` o la librería `ggrepel` para que sea completamente legible.
+
+```{r}
+# Escribe aquí tu código en R para graficar las series en el espacio latente de SVD
+df <- data.frame(
+  Factor1 = V_k[,1],
+  Factor2 = V_k[, 2]
+)
+
+ggplot(df, aes(x = Factor1, y = Factor2)) + 
+  geom_point()
+```
+
+### Ejercicio 4.2: Interpretación de los Conceptos Ocultos
+
+Analiza los resultados del gráfico anterior y responde a las siguientes preguntas:
+
+1.  **Interpretación del Factor 1:** Observa que todos los coeficientes de las series en el Factor 1 cargan en la misma dirección (todos negativos o todos positivos). ¿Qué representa matemáticamente esta primera dimensión en una descomposición SVD sobre valoraciones directas? (Piensa en el volumen promedio de votos o popularidad general).
+
+```text
+[Escribe tu respuesta aquí]
+```
+
+2.  **Interpretación del Factor 2:** Observa los extremos del Factor 2 (el eje Y).
+    *   ¿Qué series tienen las coordenadas más **negativas** en el Factor 2? ¿Qué género o temáticas comparten?
+    *   ¿Qué series tienen las coordenadas más **positivas** en el Factor 2? ¿Qué género o temáticas las une?
+    *   ¿Qué series se quedan muy cerca del **cero** (el centro neutral) y por qué crees que ocurre esto?
+
+```text
+[Escribe tu respuesta aquí]
+```
+
+3.  **El "Milagro" de SVD:** ¿Tenía el algoritmo algún metadato o información previa sobre si las series eran de Ciencia Ficción, Terror, Comedia, Drama o Anime? ¿Cómo es posible que haya agrupado y separado los géneros de forma tan perfecta en el eje vertical? Explica conceptualmente de dónde extrae SVD esta información oculta.
+
+```text
+[Escribe tu respuesta aquí]
+```

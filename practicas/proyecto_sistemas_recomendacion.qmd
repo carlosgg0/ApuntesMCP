@@ -218,6 +218,18 @@ Escribe un bloque de código en R para calcular la predicción de voto centrada 
 ```{r}
 # Escribe aquí tu código en R para calcular la predicción paso a paso
 
+med_1 <- 3.75
+med_2 <- 3.75
+med_3 <- 2.25
+
+r_2 <- 2
+r_3 <- 5
+
+num <- (similitud12 * (r_2 - med_2) + similitud13 * (r_3 - med_3))
+denom <- abs(similitud12) + abs(similitud13)
+
+r_1_pred <- med_1 + num/denom
+r_1_pred
 ```
 
 1.  **Resultado:** ¿Qué calificación estimada (sin acotar y acotada al rango [1, 5]) has obtenido para `Usuario_1` en *The Office*?
@@ -295,7 +307,10 @@ predecir_voto <- function(M, S, usuario, item) {
 
 ```{r}
 # Escribe aquí tu código en R para el Ejercicio 4.1
-
+sim <- similitud_usuarios(M)
+sim[1:3, 1:3]
+r2b <- predecir_voto(M, sim, "Usuario_1", "The Office")
+r2b
 ```
 
 3.  **Comparación:** Compara este resultado con el obtenido a mano en la sección 3 (donde solo usamos 2 vecinos). ¿Por qué cambian las cifras y qué ventajas tiene usar toda la base de datos de usuarios?
@@ -318,7 +333,22 @@ Escribe un script en R que:
 
 ```{r}
 # Escribe aquí tu script en R para el Ejercicio 4.2
+library(tidyverse)
 
+idx_no_vistas <- which(is.na(M["Usuario_1",]))
+series_no_vistas <- names(idx_no_vistas)
+predicciones <- sapply(series_no_vistas, function (x) {
+  predecir_voto(M, sim, "Usuario_1", x)
+})
+
+d1 <- data.frame(
+  serie = series_no_vistas,
+  pred = predicciones
+)
+
+d1 |> 
+  arrange(desc(pred)) |> 
+  slice_head(n=3)
 ```
 
 ---
