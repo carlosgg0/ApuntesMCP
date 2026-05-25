@@ -1,0 +1,302 @@
+---
+title: "Repaso de Análisis de Redes Sociales (SNA)"
+subtitle: "El Ecosistema de Alianzas y Conspiraciones en Poniente (Tormenta de Espadas)"
+author: "Evaluación de SNA - 1 Hora"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    embed-resources: true
+    code-fold: false
+---
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+# Cargamos las librerías del ecosistema de redes y tidyverse
+library(igraph)
+library(tidygraph)
+library(ggraph)
+library(tidyverse)
+
+# Configuración del entorno
+theme_set(theme_minimal())
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 7)
+```
+
+## Contexto del Problema
+
+Te han contratado como **Analista de Redes de Información de Poniente** (Westeros Social Network Scientist) por encargo directo del Archimaestre de la Ciudadela. 
+
+>> Durante la convulsa Guerra de los Cinco Reyes, las alianzas, traiciones y el flujo de conspiraciones ocurren a una velocidad vertiginosa. 
+
+>> Los maestres han compilado minuciosamente una crónica en forma de red de interacciones entre los personajes en el volumen **"Tormenta de Espadas"** (Libro 3 de la saga).
+
+Dispones de dos archivos CSV en tu directorio de trabajo:
+
+*   `nodos_got.csv`: Lista de personajes con sus identificadores (`Id`) y nombres limpios (`Label`).
+
+*   `aristas_got.csv`: Interacciones o co-ocurrencias entre personajes con su peso (`weight`), que indica cuántas veces interactúan o aparecen juntos.
+
+Tu objetivo es realizar una **auditoría analítica y estructural de esta red** respondiendo a las siguientes 10 preguntas. 
+
+
+>> Cada pregunta vale **1 punto** (total de 10 puntos). El ejercicio está diseñado para realizarse en **1 hora aprox.**.
+
+
+
+
+## 1. Construcción del Grafo y Estructura Base (1 punto)
+
+**Pregunta 1:** Importa los ficheros `nodos_got.csv` y `aristas_got.csv`. Construye un grafo de `tidygraph` llamado `g_got` que sea **no dirigido** (ya que la co-ocurrencia de personajes es bidireccional). 
+
+Asegúrate de:
+
+1. Renombrar las columnas de aristas de modo que las dos primeras sean `from` y `to` (mapeando `Source` y `Target`).
+
+2. Indicar mediante código el número exacto de nodos y aristas que contiene la red cargada.
+
+```{r}
+#| label: p1
+
+df_nodos <- read_csv("data/nodos_got.csv")
+df_aristas <- read_csv("data/aristas_got.csv")
+
+g_got <- graph_from_data_frame(d = df_aristas,
+                               vertices = df_nodos)
+
+# Otra posibilidad
+g_got <- tbl_graph(nodes = df_nodos, edges = df_aristas, directed = F) |> 
+  as.igraph()
+
+g_got
+```
+
+---
+
+## 2. Limpieza y Simplificación de la Red (1 punto)
+
+**Pregunta 2:** En la red compilada por los maestres, existen registros redundantes: bucles (personajes que interactúan consigo mismos) y múltiples aristas de interacción redundantes entre los mismos personajes.
+
+
+1. Elimina todos los bucles (autobucle).
+
+2. Simplifica las aristas múltiples consolidando su peso: si hay varios enlaces entre la misma pareja de personajes, agrégalos sumando su atributo `weight` en una única arista.
+
+3. Almacena este grafo limpio en la variable `g_simple` y muestra en pantalla cuántas aristas quedan tras la simplificación.
+
+```{r}
+#| label: p2
+
+g_got |> 
+  as_tbl_graph() |> 
+  activate(edges) |> 
+  distinct(from, to)
+
+# Otra posibilidad (la del profesor)
+g_simple <- igraph::simplify(g_got,
+                 remove.multiple = TRUE,
+                 remove.loops = TRUE,
+                 edge.attr.comb = list(weight="sum", "ignore"))
+
+ecount(g_simple)
+ecount(g_got)
+
+vcount(g_simple)
+vcount(g_got)
+```
+
+---
+
+## 3. Mutación y Filtrado Táctico de Élite (1 punto)
+
+**Pregunta 3:** Los analistas de la Ciudadela consideran que una relación es **"relevante"** si su peso (`weight`) es estrictamente superior a la mediana global de todos los pesos de la red simplificada, y **"secundaria"** en caso contrario.
+
+
+1. Calcular la mediana global de `weight` y añadir a las aristas de `g_simple` un nuevo atributo llamado `relacion_tipo` con los valores `"relevante"` o `"secundaria"`.
+
+2. Crear un subgrafo llamado `g_stark` filtrando la red para quedarte únicamente con las relaciones tipo `"relevante"` donde **al menos uno de los dos personajes involucrados pertenezca a la familia Stark** (es decir, que su atributo `Id` contenga la cadena `"Stark"`).
+
+3. Reportar cuántas aristas de élite Stark quedan en este subgrafo.
+
+
+```{r}
+#| label: p3
+
+# 1)
+weight_median <- median(E(g_simple)$weight)
+
+E(g_simple)$relacion_tipo <- ifelse(E(g_simple)$weight > weight_median,
+                                    "relevante",
+                                    "secundaria")
+# Usando tbl_graph
+g_simple |> 
+  as_tbl_graph() |> 
+  activate(edges) |> 
+  mutate(relacion_tipo = if_else(weight > weight_median, 
+                                 "relevante", "secundaria"))
+
+# 2)
+
+# vids <- which(grepl("Stark", V(g_simple)$Label)
+#               || grepl("Stark", ))
+# eids <- which(E(g_simple)$relacion_tipo == "relevante")
+# 
+# g_stark <- induced_subgraph(g_simple,
+#                             vids = vids,
+#                             impl = "auto")
+# g_stark <- subgraph_from_edges()
+
+g_stark <- g_simple |> 
+  as_tbl_graph() |> 
+  activate(edges) |> 
+  filter(relacion_tipo == "relevante") |> 
+  filter(grepl("Stark", .N()$Label[from]) | grepl("Stark", .N()$Label[to]))  
+  
+
+g_stark
+
+# 3)
+ecount(g_stark)
+
+```
+
+---
+
+## 4. Identificación del Megahub y Conexión Suprema (1 punto)
+
+**Pregunta 4:** 
+
+1. Calcula el Grado total (`degree`) de todos los nodos en `g_simple` y determina quién es el **Megahub** absoluto de Poniente (el personaje con más conexiones directas). Imprime su nombre (`Label`) y su número de conexiones.
+
+2. Identifica con cuál de sus vecinos tiene la interacción de mayor peso (`weight`) e imprime el nombre de dicho personaje y el peso de su relación.
+
+```{r}
+#| label: p4
+
+grados <- degree(g_simple)
+mega_hub <- which(grados == max(grados))
+V(g_simple)$Label[mega_hub]
+```
+
+---
+
+## 5. El Cuello de Botella Estructural (SPOF) (1 punto)
+
+**Pregunta 5:** A veces, el personaje más influyente no es el que habla con más gente (Grado), sino el que actúa como el puente indispensable entre clanes geográficamente distantes.
+
+Escribe código R para:
+
+1. Calcular la centralidad de intermediación (`betweenness`) de todos los nodos en `g_simple`.
+
+2. Identificar al personaje con mayor intermediación **excluyendo** al Megahub que encontraste en la Pregunta 4.
+
+3. Explicar brevemente en texto por qué este personaje es considerado un **Punto Único de Fallo (SPOF)** en la red de conspiraciones y reportar su intermediación exacta.
+
+
+```{r}
+#| label: p5
+
+```
+
+---
+
+## 6. Prestigio de Información (PageRank) frente a Grado (1 punto)
+
+**Pregunta 6:** La métrica de PageRank nos dice quién es prestigioso porque se relaciona con otros personajes prestigiosos, y no simplemente por hablar con muchos personajes secundarios.
+
+1. Calcula la centralidad de PageRank (`pagerank`) en `g_simple`.
+
+2. Muestra los 5 personajes con mayor PageRank de Poniente.
+
+3. Compara sus posiciones con el Grado. ¿Hay algún personaje que aparezca en el Top 5 de PageRank pero tenga un grado comparativamente bajo? Justifica por qué ocurre esto matemáticamente.
+
+```{r}
+#| label: p6
+
+```
+
+---
+
+## 7. Vecindario de Influencia y Densidad Ego (1 punto)
+
+**Pregunta 7:** La reina **Daenerys-Targaryen** se encuentra en el exilio reclutando su ejército en Essos. Queremos auditar su corte personal (Ego Network).
+
+1. Extrae el vecindario local de primer orden (orden = 1, es decir, conexiones directas de Daenerys) del grafo `g_simple`.
+
+2. Calcula e imprime el número exacto de personajes que componen su corte y la **densidad** de este subgrafo ego. Comenta brevemente si la corte de Daenerys es una red muy cohesionada (donde todos sus consejeros interactúan entre sí) o fragmentada.
+
+```{r}
+#| label: p7
+
+```
+
+---
+
+## 8. Caminos Mínimos de Conspiración mediante Morphing (1 punto)
+
+**Pregunta 8:** **Jon-Snow** se encuentra en el Muro en el extremo norte, mientras que **Daenerys-Targaryen** está en el este. Queremos saber cuál es el camino logístico más corto (menos escalas de interacción) que conectaría una conspiración entre ambos.
+
+Pista (usa las funciones `morph()` y `unmorph()` de `tidygraph`):
+
+1. Encuentra el camino más corto entre Jon Snow (`Id == "Jon-Snow"`) y Daenerys Targaryen (`Id == "Daenerys-Targaryen"`).
+
+2. Marca los nodos del camino con un atributo lógico `en_camino = TRUE`.
+
+3. Filtra y muestra por pantalla la secuencia ordenada de nombres (`Label`) de los personajes puente que forman esta cadena de comunicación ineludible.
+
+```{r}
+#| label: p8
+
+```
+
+---
+
+## 9. Facciones Políticas (Detección de Comunidades) (1 punto)
+
+**Pregunta 9:** Aplica el algoritmo de **Louvain** (`group_louvain`) al grafo `g_simple` para clasificar a los personajes en comunidades o alianzas políticas.
+
+Responde a las siguientes tareas:
+
+1. ¿Cuántas comunidades distintas detecta el algoritmo?
+
+2. Calcula e imprime el valor de la **modularidad** de la partición (puedes convertir a `igraph` para este cálculo). ¿Es una buena segmentación?
+
+3. Encuentra cuáles son los **5 personajes más prestigiosos (por PageRank)** que pertenecen a la misma comunidad política que **Tyrion-Lannister**.
+
+```{r}
+#| label: p9
+
+# modularity() (comando dicho por el profesor)
+
+```
+
+---
+
+## 10. Visualización Estratégica del Reino con ggraph (1 punto)
+
+**Pregunta 10:** Diseña un mapa visual estratégico para el Consejo Privado del Rey. Para evitar el desorden visual, filtra el grafo `g_simple` para quedarte **únicamente con aquellos personajes que tengan un grado superior a 10**.
+
+Requisitos de la visualización (`ggraph`):
+
+1. El **tamaño de los nodos** debe representar su centralidad de **PageRank**.
+
+2. El **color de los nodos** debe estar determinado por su **comunidad de Louvain** calculada en la Pregunta 9 (asegúrate de convertir la comunidad a factor).
+
+3. El **grosor de las aristas** debe ser proporcional al peso (`weight`) de la interacción.
+
+4. El layout debe ser de fuerzas Kamada-Kawai o stress.
+
+5. Incluye las **etiquetas de texto de los personajes** (`Label`) de forma legible y repulsiva (`repel = TRUE`).
+
+6. Añade un título descriptivo y elegante, subtítulo explicativo, y configura escalas limpias para que no haya superposición.
+
+```{r}
+#| label: p10
+
+```
+
+---
