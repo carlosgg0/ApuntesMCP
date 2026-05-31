@@ -50,42 +50,33 @@ US <- USairports
 ```{r}
 #| label: ex-1
 
-graph_attr(US, "name") <- "REdUS"
-US
+graph_attr(US, "name") <- "Red de Aeropuertos de EE.UU."
 
-head(V(US)$name)
-V(US)$name[1:10]
+vertex_attr_names(US)
+edge_attr_names(US)
 
-length(V(US))
+# length(V(US)) == vcount
 vcount(US)
 ecount(US)
 
-E(US)[1]
+E(US)[1] 
+is_directed(US)
+
+print(US)
 ```
 
 ### Ejercicio 2: Análisis de Compañías (Carriers) y Tráfico
 
 1.  Identifica los nombres de las 5 primeras compañías aéreas (`Carrier`) únicas.
-2.  ¿Cuántos vuelos tiene cada una de estas 5 compañías?
-3.  Muestra los metadatos del arco número 5.
-4.  De los **20 primeros arcos**, identifica cuáles contienen en su atributo `Carrier` la cadena "Airlines".
-5.  Añade a los aeropuertos un nuevo atributo llamado `Group` ("A" o "B" aleatorio).
-6.  Encuentra el trayecto con mayor número de pasajeros.
-7.  **Reto - Ocupación**: Calcula el ratio de ocupación de los vuelos (`Passengers / Seats`). Añade este valor como un nuevo atributo de arista llamado `Occupancy` e identifica la ruta con la mejor ocupación promedio. (Asegúrate de filtrar aquellos vuelos con 0 asientos para evitar divisiones por cero).
-
-8.  **Reto - Dominio de Mercado**: Primero, identifica el aeropuerto (hub) 
-que tiene el mayor número de vuelos de salida (out-degree). Una vez identificado, 
-determina cuál es la compañía aérea (`Carrier`) que opera más vuelos desde ese
-aeropuerto específico.
-
-9.  **Reto - Perfil de Distancia**: Calcula la distancia media (`Distance`) de los vuelos operados por cada compañía aérea (`Carrier`). ¿Cuál es la compañía que realiza, en promedio, los trayectos más largos?
 
 ```{r}
-#| label: ex-2
-
 objetivo <- unique(E(US)$Carrier)[1:5]
+objetivo
+```
 
-# Cuántos vuelos tiene cada una de estas compañías
+2.  ¿Cuántos vuelos tiene cada una de estas 5 compañías?
+
+```{r}
 cbind(E(US)$Carrier[1:15], E(US)$Departures[1:15])
 
 resumen <- US |>
@@ -99,60 +90,93 @@ resumen <- US |>
 indices <- sapply(objetivo, function(x) {
   which(grepl(x, resumen$Carrier))
 })
+
 resumen$TotalSalidas[indices]
+```
 
+3.  Muestra los metadatos del arco número 5.
 
-sapply(edge_attr(US), function(x) {
-  x[5]  
+```{r}
+lapply(edge_attr(US), function(x) {
+  x[5]
 })
-# Equivalentemente edge_attr(US, index = 5)
 
+# edge_attr(US, index = 5)
+```
 
-which(grepl("Airlines", E(US)$Carrier[1:20]))
+4.  De los **20 primeros arcos**, identifica cuáles contienen en su atributo `Carrier` la cadena "Airlines".
 
-# 5. Añade a los aeropuertos un nuevo atributo llamado `Group`(A o B aleatorio)
-V(US)$Grupo <- sample(c("A", "B"), vcount(US), replace = TRUE)
-# V(US)$Grupo <- NULL
+```{r}
+indices_airlines <- which(grepl("Airlines", E(US)[1:20]$Carrier))
+E(US)$Carrier[indices_airlines]
+```
 
-# 6.
-ind <- which.max(E(US)$Passengers)
-E(US)[ind]
+5.  Añade a los aeropuertos un nuevo atributo llamado `Group` ("A" o "B" aleatorio).
 
-# 7.
-no_vacias <- E(US)$Seats != 0
-E(US)$Occupancy[no_vacias] <- E(US)$Passengers[no_vacias] / E(US)$Seats[no_vacias]
-E(US)$Occupancy[!no_vacias] <- NA
+```{r}
+V(US)$Group <- sample(c("A", "B"), vcount(US), replace = TRUE)
+```
 
+6.  Encuentra el trayecto con mayor número de pasajeros.
 
-# identifica la ruta con la mejor ocupación promedio
+```{r}
+idx <- E(US)$Passengers == max(E(US)$Passengers)
+which(idx)
+edge_attr(US, index = idx)
+```
+
+7.  **Reto - Ocupación**: Calcula el ratio de ocupación de los vuelos (`Passengers / Seats`). Añade este valor como un nuevo atributo de arista llamado `Occupancy` e identifica la ruta con la mejor ocupación promedio. (Asegúrate de filtrar aquellos vuelos con 0 asientos para evitar divisiones por cero).
+
+```{r}
+E(US)$Occupancy <- ifelse(E(US)$Seats != 0, E(US)$Passengers / E(US)$Seats, 0)
 ind_max <- which.max(E(US)$Occupancy)
 E(US)[ind_max]
+```
 
+8.  **Reto - Dominio de Mercado**: Primero, identifica el aeropuerto (hub) 
+que tiene el mayor número de vuelos de salida (out-degree). Una vez identificado, 
+determina cuál es la compañía aérea (`Carrier`) que opera más vuelos desde ese
+aeropuerto específico.
 
-# 8. Identifica el aeropuerto que tiene el mayor número de vuelos de salida.
-# Una vez identificado, encontrar la compañía aérea (Carrier) que opera más
-# vuelos desde ese aeropuerto específico.
-
+```{r}
 grados <- degree(US, mode = "out")
-ind_max <- which.max(grados)
-v_atl <- V(US)[ind_max]
+id_hub <- which.max(grados)
 
-vuelos_desde_atl <- E(US)[v_atl %->% V(US)]
-sort(table(vuelos_desde_atl$Carrier), decreasing = TRUE)[1]
+aristas_hub <- E(US)[V(US)[id_hub] %->% V(US)]
 
-# 9. Calcula la distancia media (Distance) de los vuelos operados por cada
-# compañía aérea (Carrier). ¿Cuál es la compañía que realiza, en promedio,
-# los trayectos más largos?
+# Según Gemini hay que crear un dataframe por lo que creo que es mejor
+# hacerlo con tidygraph directamente
+```
 
-US |>
-  as_tbl_graph() |>
-  activate(edges) |>
-  as_tibble() |> # Aquí nos quedamos únicamente con las aristas
-  group_by(Carrier) |>
-  summarise(distancia_media = mean(Distance)) |>
-  arrange(desc(distancia_media)) |>
-  slice_head(n=1)
+```{r}
+# Con tidygraph
+US |> 
+  as_tbl_graph() |> 
+  activate(nodes) |> 
+  mutate(grado_salida = centrality_degree(mode = "out")) |> 
+  activate(edges) |> 
+  filter(.N()$grado_salida[from] == max(.N()$grado_salida)) |> 
+  as_tibble() |> 
+  group_by(Carrier) |> 
+  summarise(total_vuelos = sum(Departures, na.rm = TRUE)) |> 
+  arrange(desc(total_vuelos)) |> 
+  head(1)
+  
+```
 
+9.  **Reto - Perfil de Distancia**: Calcula la distancia media (`Distance`) de los vuelos operados por cada compañía aérea (`Carrier`). ¿Cuál es la compañía que realiza, en promedio, los trayectos más largos?
+
+```{r}
+US |> 
+  as_tbl_graph() |> 
+  activate(edges) |> 
+  as_tibble() |> 
+  group_by(Carrier) |> 
+  summarise(
+    distancia_media = mean(Distance)
+  ) |> 
+  arrange(desc(distancia_media)) |> 
+  head(1)
 ```
 
 ---
@@ -162,38 +186,62 @@ US |>
 ### Ejercicio 3: Búsqueda por Patrones
 
 1.  De los **primeros 20 vértices**, identifica ciudades con "Angeles".
-2.  Busca ciudades que empiecen por "Wash".
-3.  Localiza el aeropuerto con "JF" en su nombre.
-4.  Calcula el grado (in/out/total) de "Kahului".
 
 ```{r}
-#| label: ex-3
-
-# 1. De los primeros 20 vértices, identifica ciudades con "Angeles"
 indices <- which(grepl("Angeles", V(US)$City[1:20]))
 V(US)[indices]$name
 V(US)[indices]$City
+```
 
-# 2. Busca ciudades que empiecen por "Wash"
+2.  Busca ciudades que empiecen por "Wash".
+
+```{r}
 indices <- which(grepl("^Wash", V(US)$City))
 V(US)[indices]$name
 V(US)[indices]$City
 ```
 
+3.  Localiza el aeropuerto con "JF" en su nombre.
+
+```{r}
+indices <- which(grepl("JF", V(US)$name))
+V(US)[indices]$name
+V(US)[indices]$City
+```
+
+4.  Calcula el grado (in/out/total) de "Kahului".
+
+```{r}
+idx <- which(grepl("Kahului", V(US)$City))
+degree(US, mode = "in")[idx]
+degree(US, mode = "out")[idx]
+degree(US, mode = "total")[idx]
+```
+
 ### Ejercicio 4: Operadores de Selección y Edición
 
 1.  Muestra las conexiones entre "JFK" y "BOS" (ambos sentidos).
+
+```{r}
+E(US)["JFK" %--% "BOS"]
+```
+
 2.  Identifica los carriers en la ruta directa "JFK" -> "BOS".
+
+```{r}
+E(US)["JFK" %->% "BOS"]$Carrier
+```
+
 3.  Calcula las salidas de "BOS".
+
+```{r}
+E(US)["BOS" %->% V(US)]
+```
+
 4.  **Elimina la conexión directa entre "BJC" y "MIA"**. Comprueba que ha desaparecido.
 
 ```{r}
 #| label: ex-4
-
-# 1. Conexiones entre "JFK" y "BOS" (ambos sentidos)
-length(E(US)["JFK" %--% "BOS"])
-
-# 4. Eliminar la conexión directa entre "BJC" y "MIA".
 US <- US - E(US)["BJC" %--% "MIA"]
 E(US)["BJC" %--% "MIA"]
 ```
@@ -206,7 +254,10 @@ E(US)["BJC" %--% "MIA"]
 ```{r}
 #| label: ex-5
 
+idx_california <- which(grepl("CA", V(US)$City))
+idx_nueva_york <- which(grepl("NY", V(US)$City))
 
+length(E(US)[V(US)[idx_california] %->% V(US)[idx_nueva_york]])
 ```
 
 ---
@@ -221,11 +272,11 @@ E(US)["BJC" %--% "MIA"]
 ```{r}
 #| label: ex-6
 
-# 1. Aeropuertos alcanzables desde Las Vegas con exactamente 1 escala
 indices <- which(grepl("Vegas", V(US)$City))
 vecinos_vegas <- ego(US, order = 2, nodes = indices, mode = "out")
-# red <- induced_subgraph(US, unlist(vecinos_vegas))
-names(vecinos_vegas[[1]])
+
+red <- induced_subgraph(US, unlist(vecinos_vegas))
+red
 ```
 
 ### Ejercicio 7: Morphing y Entornos locales
@@ -236,22 +287,45 @@ names(vecinos_vegas[[1]])
 ```{r}
 #| label: ex-7
 
-# 1. Identifica y marca los nodos del camino más corto entre Seattle
-# y Miami
 id_SEA <- which(grepl("SEA", V(US)$name))
 id_MIA <- which(grepl("MIA", V(US)$name))
+
 grafo_camino <- US |>
   as_tbl_graph() |>
-  activate(nodes) |>
-  mutate(en_ruta = FALSE) |>
+  activate(nodes) |> 
+  mutate(en_ruta = FALSE) |> 
+  activate(edges) |> 
+  mutate(en_ruta = FALSE) |> 
   morph(to_shortest_path, from = id_SEA, to = id_MIA) |>
+  activate(nodes) |>
   mutate(en_ruta = TRUE) |>
+  activate(edges) |> 
+  mutate(en_ruta = TRUE) |> 
   unmorph()
+  
+id_chicago <- which(grepl("ORD", V(US)$name))
+
+US |> 
+  as_tbl_graph() |> 
+  morph(to_local_neighborhood, node = id_chicago, order = 1) |> 
+  activate(nodes) |> 
+  mutate(entorno_ORD = TRUE) |> 
+  unmorph() |> 
+  filter(entorno_ORD)
+
+subgrafo_chicago <- make_ego_graph(US, order = 1, nodes = id_chicago,mode = "all")[[1]]
+subgrafo_chicago
 ```
 
 ### Ejercicio 8: Visualización Temática con ggraph
 
 1.  Filtra la red para aeropuertos de grado > 50.
+
+```{r}
+indices_50 <- degree(US) > 50
+red <- induced_subgraph(US, V(US)[indices_50])
+```
+
 2.  Colorea por **Estado** y varía el tamaño según el grado.
 3.  Ajusta las aristas según el número de pasajeros.
 

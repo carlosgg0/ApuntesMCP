@@ -19,51 +19,7 @@ Repaso de:
 - visualización condicional (filtrado) 
 
 ## 0. Preparación del Dataset
-Ejecuta este bloque para generar los datos básicos.
-
-```{r}
-#| label: data-generation
-set.seed(123)
-nodos_aeropuertos <- data.frame(
-  id = 1:10,
-  ciudad = c("Madrid", "Londres", "París", "Berlín", "Roma", "Lisboa", "Dublín", "Atenas", "Viena", "Ámsterdam"),
-  pais = c("ES", "UK", "FR", "DE", "IT", "PT", "IE", "GR", "AT", "NL"),
-  pasajeros_m = c(61, 80, 76, 35, 43, 31, 32, 25, 31, 71)
-)
-
-aristas_vuelos <- data.frame(
-  from = c(1,1,1,2,2,3,3,3,4,5,6,7,8,9,10,1,10,2),
-  to =   c(2,3,6,3,7,4,5,10,9,8,1,1,1,4,3,5,2,8),
-  distancia = sample(500:3000, 18)
-)
-```
-
----
-
-## Reto 1: Creación del Grafo (7 min)
-**Objetivo:** Crear un objeto igraph a partir de dataframes.
-
-1. Usa `graph_from_data_frame()` para crear un objeto llamado `g_vuelos`.
-2. Asegúrate de que el grafo sea **dirigido**.
-3. Comprueba con la función `V()` y `E()` que los atributos (pasajeros, distancia) se han cargado correctamente.
-4. En atributo name coloca la abreviatura de cada aeropuerto:
-
-MAD, LHR, CDG, BER, FCO, LIS, DUB, ATH, VIE, AMS
-
-
-```{r}
-#| label: reto-1
-# TU CÓDIGO AQUÍ:
-g_vuelos <- graph_from_data_frame(d = aristas_vuelos,
-                      vertices = nodos_aeropuertos,
-                      directed = TRUE)
-
-V(g_vuelos)
-E(g_vuelos)
-
-V(g_vuelos)$name <- c("MAD", "LHR", "CDG", "BER", 
-                      "FCO", "LIS", "DUB", "ATH", "VIE", "AMS")
-```
+Ejecuta este bloque para generar los datos básicos. = = = = = = = = = = = = 
 
 ---
 

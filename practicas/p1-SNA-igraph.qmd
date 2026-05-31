@@ -42,9 +42,9 @@ Utiliza la función adecuada de `igraph` para crear un **grafo dirigido** a part
 
 ```{r reto-1-1}
 # Escribe tu código aquí
-g_tronos <- graph.data.frame(relaciones, 
-                             directed = TRUE, 
-                             vertices = personajes)
+g_tronos <- graph_from_data_frame(relaciones, 
+                                  directed = TRUE, 
+                                  vertices = personajes)
 g_tronos
 ```
 
@@ -59,9 +59,8 @@ Usa el atributo `poder` de los nodos para que el tamaño de cada vértice en el 
 
 ```{r reto-2-1}
 # Escribe tu código aquí
-V(g_tronos)$poder <- V(g_tronos)$poder * 3
-V(g_tronos)$size <- V(g_tronos)$poder
-plot(g_tronos)
+V(g_tronos)$size <- V(g_tronos)$poder * 3
+plot(g_tronos, layout = layout_with_kk(g_tronos))
 ```
 
 ### Tarea 2.2: Colores por "Casa" Nobiliaria
@@ -80,10 +79,11 @@ indices_Lobo <- V(g_tronos)$casa == "Lobo"
 indices_Cuervo <- V(g_tronos)$casa == "Cuervo"
 indices_Ninguna <- V(g_tronos)$casa == "Ninguna"
 
-V(g_tronos)[indices_Leon]$color = "gold"
-V(g_tronos)[indices_Lobo]$color = "gray70"
-V(g_tronos)[indices_Cuervo]$color = "purple"
-V(g_tronos)[indices_Ninguna]$color = "black"
+V(g_tronos)$color <- "lightblue"
+V(g_tronos)[indices_Leon]$color <- "gold"
+V(g_tronos)[indices_Lobo]$color <- "gray70"
+V(g_tronos)[indices_Cuervo]$color <- "purple"
+V(g_tronos)[indices_Ninguna]$color <- "black"
 
 plot(g_tronos)
 ```
@@ -113,7 +113,8 @@ Dibuja el grafo usando el algoritmo de fuerzas **Fruchterman-Reingold**. Asegúr
 # Escribe tu código aquí
 plot(g_tronos,
      layout = layout_with_fr(g_tronos),
-     edge.curved = 0.2)
+     edge.curved = 0.2,
+     title = "Grafo de Juego de Tronos")
 ```
 
 ### Tarea 3.2: Agrupaciones (The "Mark Groups" feature)
@@ -143,11 +144,12 @@ Encuentra qué personaje (`name`) recibe información (flecha entrante) del "Esp
 
 ```{r reto-4-opcional}
 # Escribe tu código aquí
-indices_dragon <- which(V(g_tronos)$casa == "Dragón")
-E(g_tronos)[indices_dragon %->% V(g_tronos)]
+v_espia <- V(g_tronos)[grepl("Espía", V(g_tronos)$nombre)]
+nodos_receptores <- neighbors(g_tronos, v = v_espia, mode = "out")
+nodos_receptores$nombre
 
-head_of(g_tronos, indices_dragon)
-
-vertices <- neighbors(g_tronos, indices_dragon, mode = "out")
-V(g_tronos)[vertices]
+# Otra forma:
+aristas_salida <- incident(g_tronos, v = v_espia, mode = "out")
+nodos_destino <- head_of(g_tronos, aristas_salida)
+nodos_destino$nombre
 ```

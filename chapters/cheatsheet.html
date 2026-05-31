@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>proyecto_ts_australia</title>
+<title>Cheat-Sheet: Análisis de Redes Sociales (SNA) en R</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -61,17 +61,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="proyecto_ts_australia_files/libs/clipboard/clipboard.min.js"></script>
-<script src="proyecto_ts_australia_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="proyecto_ts_australia_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="proyecto_ts_australia_files/libs/quarto-html/popper.min.js"></script>
-<script src="proyecto_ts_australia_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="proyecto_ts_australia_files/libs/quarto-html/anchor.min.js"></script>
-<link href="proyecto_ts_australia_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="proyecto_ts_australia_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="proyecto_ts_australia_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="proyecto_ts_australia_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="proyecto_ts_australia_files/libs/bootstrap/bootstrap-65c6c659bb8b2f8ba5bc42d0323aa9a1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="cheatsheet_files/libs/clipboard/clipboard.min.js"></script>
+<script src="cheatsheet_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="cheatsheet_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="cheatsheet_files/libs/quarto-html/popper.min.js"></script>
+<script src="cheatsheet_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="cheatsheet_files/libs/quarto-html/anchor.min.js"></script>
+<link href="cheatsheet_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="cheatsheet_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="cheatsheet_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="cheatsheet_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="cheatsheet_files/libs/bootstrap/bootstrap-50f4a4603d32c79bb051b0bcebe5566d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
 </head>
@@ -84,7 +84,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">proyecto_ts_australia</h1>
+<h1 class="title">Cheat-Sheet: Análisis de Redes Sociales (SNA) en R</h1>
 </div>
 
 
@@ -101,222 +101,220 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="fase-1-preparación-de-la-serie-temporal" class="level1">
-<h1>Fase 1: Preparación de la Serie Temporal</h1>
-<section id="tarea-1.1-agregación-de-datos" class="level2">
-<h2 class="anchored" data-anchor-id="tarea-1.1-agregación-de-datos">Tarea 1.1: Agregación de datos</h2>
+<section id="construcción-y-generación-de-grafos-igraph" class="level2">
+<h2 class="anchored" data-anchor-id="construcción-y-generación-de-grafos-igraph">1. Construcción y Generación de Grafos (<code>igraph</code>)</h2>
+<p>La librería <code>igraph</code> permite construir redes desde múltiples estructuras de datos base.</p>
+<ul>
+<li><strong>Desde Matriz de Adyacencia:</strong> <code>graph.adjacency(matriz, mode="undirected")</code>.</li>
+<li><strong>Desde Lista de Aristas (Dataframe):</strong> <code>graph_from_data_frame(df, directed=FALSE)</code>.</li>
+<li><strong>Generación Manual:</strong> <code>make_graph(edges = c(1,2, 2,3), directed = FALSE)</code>.</li>
+<li><strong>Grafos Famosos:</strong> <code>make_graph("Zachary")</code>.</li>
+<li><strong>Generadores Sintéticos:</strong>
+<ul>
+<li><strong>Erdős-Rényi (Aleatorio):</strong> <code>sample_gnp(n, p, directed = FALSE)</code>.</li>
+<li><strong>Barabási-Albert (Libre de escala/Hubs):</strong> <code>sample_pa(n, power, m, directed = FALSE)</code>.</li>
+<li><strong>Canónicos:</strong> <code>make_tree()</code>, <code>make_full_graph()</code>, <code>make_lattice()</code>, <code>make_star()</code>.</li>
+</ul></li>
+</ul>
+<hr>
+</section>
+<section id="el-ecosistema-tidygraph" class="level2">
+<h2 class="anchored" data-anchor-id="el-ecosistema-tidygraph">2. El Ecosistema <code>tidygraph</code></h2>
+<p><code>tidygraph</code> trata la red como dos tablas vinculadas (nodos y aristas), permitiendo el uso de verbos de <code>dplyr</code>.</p>
+<section id="manipulación-básica" class="level3">
+<h3 class="anchored" data-anchor-id="manipulación-básica">Manipulación Básica</h3>
+<ul>
+<li><strong>Conversión:</strong> <code>as_tbl_graph(grafo_igraph)</code>.</li>
+<li><strong>Activación:</strong> <code>activate(nodes)</code> o <code>activate(edges)</code> define sobre qué tabla operan los verbos siguientes.</li>
+<li><strong>Mutaciones y Filtros:</strong> <code>mutate()</code>, <code>filter(!node_is_isolated())</code>.</li>
+<li><strong>Pronombre <code>.N()</code>:</strong> Permite acceder a la tabla de nodos desde la tabla de aristas, ej: <code>.N()$atributo[from]</code>.</li>
+<li><strong>Edición Estructural:</strong> <code>bind_nodes()</code>, <code>bind_edges()</code>, <code>graph_join(by="name")</code>, <code>reroute(from=X, to=Y)</code>.</li>
+</ul>
+</section>
+<section id="vistas-temporales-morphing" class="level3">
+<h3 class="anchored" data-anchor-id="vistas-temporales-morphing">Vistas Temporales (Morphing)</h3>
+<p>Permite aislar subconjuntos, operar sobre ellos y consolidar resultados. Esquema básico: <code>morph() %&gt;% mutate() %&gt;% unmorph()</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Función <code>morph()</code></th>
+<th style="text-align: left;">Aplicación Práctica</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>to_shortest_path(from, to)</code></td>
+<td style="text-align: left;">Identificación de rutas críticas y mediadores.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>to_local_neighborhood(node, order)</code></td>
+<td style="text-align: left;">Resaltar Ego-red (nodo y vecinos directos).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>to_contracted(Atributo)</code></td>
+<td style="text-align: left;">Colapsar nodos en macro-grupos (contracción).</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>to_minimum_spanning_tree()</code></td>
+<td style="text-align: left;">Esqueleto de conectividad mínima sin redundancias.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>to_components()</code></td>
+<td style="text-align: left;">Separar en subgrafos inconexos (usar con <code>crystallise()</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="métricas-estructurales-y-centralidad" class="level2">
+<h2 class="anchored" data-anchor-id="métricas-estructurales-y-centralidad">3. Métricas Estructurales y Centralidad</h2>
+<p>Los métodos en <code>tidygraph</code> suelen utilizar el prefijo <code>centrality_*</code> para calcularse dinámicamente dentro de un <code>mutate()</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Métrica (<code>igraph</code> / <code>tidygraph</code>)</th>
+<th style="text-align: left;">Objetivo Analítico y Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>degree()</code> / <code>centrality_degree()</code></td>
+<td style="text-align: left;"><strong>Popularidad/Actividad:</strong> Número de conexiones directas. Útil para detectar hubs inmediatos.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>betweenness()</code> / <code>centrality_betweenness()</code></td>
+<td style="text-align: left;"><strong>Control/SPOF:</strong> Veces que un nodo actúa como puente en el camino más corto entre otros dos. Nodos críticos para el flujo.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>closeness()</code> / <code>centrality_closeness()</code></td>
+<td style="text-align: left;"><strong>Eficiencia/Rapidez:</strong> Inverso de la suma de las distancias. Útil para ubicar recursos óptimos.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>harmonic_centrality()</code></td>
+<td style="text-align: left;"><strong>Cercanía (Redes Dirigidas):</strong> Corrige el aislamiento sumando inversas de distancias en lugar de la inversa de la suma.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>eigen_centrality()</code> / <code>centrality_eigen()</code></td>
+<td style="text-align: left;"><strong>Prestigio:</strong> Puntúa más alto a quienes se conectan con otros nodos importantes.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>hits_scores()</code></td>
+<td style="text-align: left;"><strong>Hubs y Authorities:</strong> En redes dirigidas, separa nodos referentes (Authorities) de aquellos que los enlazan (Hubs).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>edge_betweenness()</code></td>
+<td style="text-align: left;"><strong>Cuellos de Botella:</strong> Identifica aristas que son puentes críticos.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>transitivity()</code></td>
+<td style="text-align: left;"><strong>Clustering:</strong> Proporción de triángulos cerrados (probabilidad de que los amigos de mis amigos sean mis amigos). Valores bajos indican “brokers”.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="detección-de-comunidades" class="level2">
+<h2 class="anchored" data-anchor-id="detección-de-comunidades">4. Detección de Comunidades</h2>
+<p>Algoritmos para dividir la red en grupos densamente conectados. En <code>tidygraph</code> se ejecutan dentro de <code>mutate()</code> con el prefijo <code>group_*</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Algoritmo (<code>igraph</code>)</th>
+<th style="text-align: left;">Enfoque</th>
+<th style="text-align: left;">Características</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>cluster_louvain()</code> / <code>group_louvain()</code></td>
+<td style="text-align: left;">Jerarquía / Multilevel</td>
+<td style="text-align: left;">Muy rápido y pragmático para redes modernas a gran escala.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>cluster_infomap()</code> / <code>group_infomap()</code></td>
+<td style="text-align: left;">Caminos Aleatorios</td>
+<td style="text-align: left;">Superior para rastrear circulación de ideas basado en teoría de la información.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>cluster_edge_betweenness()</code></td>
+<td style="text-align: left;">Cuellos de Botella</td>
+<td style="text-align: left;">Elimina aristas puente progresivamente para fragmentar la red.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>cluster_fast_greedy()</code></td>
+<td style="text-align: left;">Aglomeración</td>
+<td style="text-align: left;">Iterativo <em>bottom-up</em> fusionando nodos para optimizar modularidad.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>cluster_label_prop()</code></td>
+<td style="text-align: left;">Votación</td>
+<td style="text-align: left;">Nodos adoptan la etiqueta de la mayoría de sus vecinos. Extremadamente rápido.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="visualización-igraph-clásico" class="level2">
+<h2 class="anchored" data-anchor-id="visualización-igraph-clásico">5. Visualización: <code>igraph</code> Clásico</h2>
+<p>El ploteo clásico usa el operador <code>$</code> para metadatos y modificadores lógicos.</p>
+<section id="sintaxis-básica-y-atributos" class="level3">
+<h3 class="anchored" data-anchor-id="sintaxis-básica-y-atributos">Sintaxis Básica y Atributos</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fpp3)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Attaching packages ──────────────────────────────────────────── fpp3 1.0.3 ──</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>✔ tibble      3.3.1     ✔ tsibble     1.2.0
-✔ dplyr       1.2.1     ✔ tsibbledata 0.4.1
-✔ tidyr       1.3.2     ✔ ggtime      0.2.0
-✔ lubridate   1.9.5     ✔ feasts      0.5.0
-✔ ggplot2     4.0.3     ✔ fable       0.5.0</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Conflicts ───────────────────────────────────────────────── fpp3_conflicts ──
-✖ lubridate::date()    masks base::date()
-✖ dplyr::filter()      masks stats::filter()
-✖ tsibble::intersect() masks base::intersect()
-✖ tsibble::interval()  masks lubridate::interval()
-✖ dplyr::lag()         masks stats::lag()
-✖ tsibble::setdiff()   masks base::setdiff()
-✖ tsibble::union()     masks base::union()</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(forecast)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tseries)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Registered S3 method overwritten by 'quantmod':
-  method            from
-  as.zoo.data.frame zoo </code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(TTR)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"vic_elec"</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> vic_elec <span class="sc">|&gt;</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date) <span class="sc">|&gt;</span> </span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">demand =</span> <span class="fu">sum</span>(Demand))</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 1,096 × 2
-   Date        demand
-   &lt;date&gt;       &lt;dbl&gt;
- 1 2012-01-01 222438.
- 2 2012-01-02 257965.
- 3 2012-01-03 267099.
- 4 2012-01-04 222742.
- 5 2012-01-05 210585.
- 6 2012-01-06 210247.
- 7 2012-01-07 202526.
- 8 2012-01-08 193413.
- 9 2012-01-09 213804.
-10 2012-01-10 215020.
-# ℹ 1,086 more rows</code></pre>
-</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Atributos de vértices (Nodos)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="st">"lightblue"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)[condicion]<span class="sc">$</span>size <span class="ot">&lt;-</span> <span class="dv">20</span> <span class="co"># Mapeo condicional</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Atributos de aristas (Edges)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>width <span class="ot">&lt;-</span> <span class="fu">E</span>(g)<span class="sc">$</span>weight <span class="sc">*</span> <span class="fl">0.5</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Operadores de selección de aristas: %--% (bidireccional), %-&gt;% (origen a destino)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[<span class="fu">V</span>(g)[condicion_A] <span class="sc">%--%</span> <span class="fu">V</span>(g)[condicion_B]]<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="st">"red"</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualización base</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g, <span class="at">layout =</span> layout_with_kk, <span class="at">vertex.label.cex =</span> <span class="fl">0.8</span>, <span class="at">edge.arrow.size =</span> <span class="dv">0</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Marcar comunidades</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g, </span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>     <span class="at">mark.groups =</span> <span class="fu">list</span>(<span class="at">grupo1 =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>), <span class="at">grupo2 =</span> <span class="fu">c</span>(<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>)), </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">mark.col =</span> <span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="fl">0.5</span>), <span class="fu">rgb</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="fl">0.5</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
-<section id="tarea-1.2-creación-del-objeto-ts" class="level1">
-<h1>Tarea 1.2: Creación del objeto ts</h1>
+<section id="visualización-declarativa-ggraph" class="level2">
+<h2 class="anchored" data-anchor-id="visualización-declarativa-ggraph">6. Visualización Declarativa: <code>ggraph</code></h2>
+<section id="layouts-principales" class="level3">
+<h3 class="anchored" data-anchor-id="layouts-principales">Layouts principales</h3>
+<ul>
+<li><code>stress</code>, <code>fr</code>, <code>circle</code>, <code>tree</code></li>
+</ul>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>ts_australia <span class="ot">&lt;-</span> <span class="fu">ts</span>(</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> df<span class="sc">$</span>demand,</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">frequency =</span> <span class="dv">7</span>,</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">2012</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>ts_australia</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Time Series:
-Start = c(2012, 1) 
-End = c(2168, 4) 
-Frequency = 7 
-   [1] 222437.9 257964.7 267098.6 222742.3 210585.2 210246.5 202526.3 193412.5
-   [9] 213804.0 215020.4 217340.0 218707.0 215970.3 194323.9 188691.1 252439.5
-  [17] 289339.9 259997.6 239956.4 233364.3 213334.6 222510.0 275843.4 287556.4
-  [25] 256834.1 208338.9 248593.8 247057.0 255388.7 271250.2 228373.4 230449.4
-  [33] 236699.1 242147.0 230059.0 214652.9 226810.9 228713.2 228684.8 231835.7
-  [41] 233961.7 200809.9 194296.2 232714.9 246713.8 271461.8 262597.3 238790.7
-  [49] 211657.3 210570.2 239208.0 238433.9 239938.7 250064.8 272114.6 271301.7
-  [57] 257595.8 261775.5 238059.7 232424.8 230509.2 223738.7 202001.6 189314.4
-  [65] 222161.3 226546.1 227483.6 227944.4 226295.8 193167.0 184042.8 189343.3
-  [73] 237412.2 258336.7 250193.6 227885.2 187823.6 182784.8 228932.2 239472.0
-  [81] 229622.8 223033.0 223700.1 196929.1 190200.3 223140.1 224062.1 225020.8
-  [89] 227265.9 229204.0 198993.3 190757.7 221769.1 230272.4 229404.1 229102.0
-  [97] 189144.5 179753.2 178659.8 193230.5 227935.2 226675.9 225864.4 222113.3
- [105] 193555.5 186472.7 222965.5 225747.6 228334.9 229523.1 225923.8 192082.0
- [113] 186433.7 223059.8 241903.5 209159.0 234252.5 228769.1 198196.1 194958.3
- [121] 235059.1 229536.8 240483.5 254756.0 242704.4 215886.1 206751.8 242809.9
- [129] 232699.7 230311.7 233037.2 233130.5 215254.4 211803.0 249256.9 249254.4
- [137] 247681.7 246655.8 243195.6 219327.1 212856.3 252457.4 253755.7 241269.2
- [145] 249582.0 263721.3 220228.8 216582.2 253704.8 256094.7 257077.1 253310.5
- [153] 253700.6 230920.8 223353.2 260650.0 265530.4 258475.1 255921.8 254508.8
- [161] 223756.5 212414.3 222720.5 256866.3 257501.2 257514.0 247114.8 221807.4
- [169] 213711.1 251112.7 254636.9 266264.2 271088.0 263104.7 230378.7 213594.9
- [177] 252671.5 264059.2 267537.5 260322.3 252546.7 224671.7 224268.4 256833.8
- [185] 253335.8 258808.8 262425.7 261380.7 230941.0 226479.7 252647.5 256519.7
- [193] 250893.1 255749.9 247626.4 222562.3 215138.9 244003.8 243157.0 254465.5
- [201] 258486.8 248558.8 214549.4 207150.3 250261.7 252210.2 253238.2 254357.9
- [209] 252298.7 224996.3 218084.6 258553.5 258129.9 260741.3 267323.9 247490.0
- [217] 213633.5 209208.9 254802.9 250099.3 263362.6 265027.2 254332.3 218969.8
- [225] 211235.7 247746.4 257461.6 256402.2 252774.1 256037.6 226303.1 213479.3
- [233] 248335.9 248058.5 238524.6 237537.1 250733.8 219379.9 209191.5 244192.8
- [241] 239360.2 234704.3 249256.8 246553.8 212075.5 194997.4 227446.6 221770.7
- [249] 224648.8 227215.9 239422.0 209693.8 193709.6 229572.5 226882.3 226525.4
- [257] 234546.4 239911.6 205017.7 198732.7 230440.5 237708.7 232122.4 227096.1
- [265] 224756.2 194115.3 185871.2 226833.3 228063.6 222418.4 219222.9 223753.0
- [273] 205502.2 197123.2 224617.1 221770.7 218765.3 221145.8 213292.6 208549.6
- [281] 190637.5 229334.5 231453.5 232421.8 244518.8 234267.6 199091.8 181273.8
- [289] 214050.6 221546.0 223895.0 222417.6 221405.0 189346.8 182926.7 219869.2
- [297] 219869.0 219324.9 218090.0 219564.1 197354.7 181789.3 217556.2 228686.6
- [305] 231872.4 221178.6 218423.8 187414.7 183442.9 210744.1 190504.7 216680.8
- [313] 217260.1 210869.5 184680.7 178643.5 214857.6 215020.3 216069.4 219953.5
- [321] 215938.1 190509.1 181210.1 215701.0 224586.0 219721.2 219342.8 221316.0
- [329] 206458.4 187779.8 220911.9 228265.4 243564.6 294475.4 265022.1 199493.1
- [337] 181169.3 212403.2 212465.1 216748.1 220974.4 231175.3 222033.3 180779.3
- [345] 215786.8 230815.7 260312.8 271205.2 236168.4 200768.7 182613.8 214977.6
- [353] 228543.7 236330.0 216425.0 205430.4 195608.7 227805.1 212029.3 161104.5
- [361] 169492.2 194346.6 185457.1 174629.6 169899.2 183683.1 175902.0 195653.9
- [369] 242875.2 294374.9 220537.7 196407.9 252628.0 233444.8 206039.8 218198.7
- [377] 247876.0 189966.8 178116.3 208195.4 224553.5 234069.0 281611.7 251366.3
- [385] 192610.2 191660.5 240219.1 232335.6 227277.7 264618.8 241946.6 191032.2
- [393] 185246.9 191231.6 216034.1 225517.1 229919.5 213877.5 188346.0 186687.1
- [401] 221777.2 237171.4 270520.5 266912.2 249673.5 209021.5 186554.8 223855.1
- [409] 234604.7 252120.6 261209.4 258838.0 237254.0 236908.8 292934.3 246081.7
- [417] 233437.2 248492.7 254878.0 228392.0 231195.4 273951.2 249990.7 243221.3
- [425] 213820.8 211015.0 187676.3 190716.5 247945.4 261705.2 275409.7 289349.1
- [433] 287927.5 256427.6 239326.4 258770.7 311440.7 258627.3 229112.5 225672.5
- [441] 194715.5 186079.9 220679.2 224205.6 231366.1 229716.3 220759.2 195770.4
- [449] 187600.0 225238.5 241672.1 266474.3 220658.4 178379.6 184031.6 178275.8
- [457] 182784.2 216122.9 218378.5 219434.1 219126.8 192132.0 195253.2 220856.2
- [465] 224455.6 223866.0 225340.9 223889.1 197073.8 188178.3 223968.9 224003.7
- [473] 228289.2 231580.7 225883.1 198294.3 190198.5 228654.4 226543.2 226516.3
- [481] 191932.2 210675.6 188050.1 187383.2 227780.8 234331.6 242180.9 237506.3
- [489] 230510.1 201629.6 200272.7 233021.8 237508.5 233531.3 227344.8 224788.7
- [497] 193121.2 186833.2 225607.6 242116.4 243520.2 246111.7 240492.7 214626.2
- [505] 203631.7 247161.4 246102.0 252473.9 246861.8 243848.0 208384.7 203629.4
- [513] 240861.4 245558.1 241439.7 243575.7 233625.5 210257.4 203080.4 245050.0
- [521] 245241.0 247637.1 242571.7 240503.1 215150.7 209727.3 213079.7 246298.8
- [529] 256449.1 256037.0 250487.2 221663.0 213655.3 260436.0 252418.4 257776.5
- [537] 260829.6 254999.0 221746.7 214904.3 264806.7 254881.9 259476.7 256720.3
- [545] 247064.7 222058.6 206953.6 239436.4 235070.5 237573.2 247302.1 244190.7
- [553] 216644.2 212113.6 252363.1 261632.3 259330.9 260113.4 248424.5 218723.6
- [561] 207346.9 235825.6 239022.1 237450.0 231239.6 229189.7 224597.6 216689.3
- [569] 258814.1 258020.4 252392.3 261100.6 246783.8 212289.1 204506.7 230580.2
- [577] 240491.0 248006.1 245690.6 251977.5 223222.9 209434.3 242568.9 242558.4
- [585] 254585.7 251416.9 262691.1 208535.2 201349.8 241995.9 241844.9 248848.9
- [593] 243303.4 232997.6 206106.6 201283.9 249421.4 259800.7 251240.4 248893.7
- [601] 247420.2 210328.2 199585.3 230135.3 229773.1 224672.8 224512.5 217566.4
- [609] 185860.7 175919.8 212766.3 217647.6 218169.1 223511.3 224667.5 193158.2
- [617] 184838.6 215592.4 221404.5 225934.4 232375.1 235597.3 195649.2 181053.5
- [625] 227798.9 223324.1 226190.1 231961.0 228414.7 194379.3 181416.9 213492.2
- [633] 213469.7 213027.3 222806.6 214434.7 192516.5 178953.2 214191.1 214828.1
- [641] 225980.0 224880.5 212877.4 185952.1 171519.1 214765.2 214247.0 215721.4
- [649] 221056.7 211346.9 181637.2 183620.8 226697.4 219551.5 216336.2 220446.4
- [657] 215679.0 185444.1 184073.1 218200.1 229026.4 224597.2 231150.0 229622.6
- [665] 195017.5 189279.4 225299.8 225797.4 224669.4 222239.9 214931.9 187497.2
- [673] 178947.1 203181.3 185667.5 222755.3 224784.7 220566.8 193509.8 184673.1
- [681] 221485.3 231271.4 239229.9 227766.6 220844.6 190857.9 180675.0 220259.0
- [689] 228398.1 220787.0 219967.9 211584.3 187821.2 179778.3 209567.6 219937.4
- [697] 239330.5 228771.7 212608.5 186101.6 186811.6 254340.8 236265.7 223054.6
- [705] 220894.8 214425.3 184528.2 181837.1 218821.1 212303.4 214079.1 215086.6
- [713] 216505.1 186297.8 179118.8 216431.7 224880.1 237033.4 284778.5 242698.7
- [721] 196850.5 195445.9 197708.1 191951.4 176812.0 180867.1 189497.7 194257.0
- [729] 168178.4 182948.8 184387.9 175185.0 188350.6 189085.6 173797.6 169732.8
- [737] 195241.1 199770.5 205338.9 227333.7 258110.6 203026.6 187661.2 253207.8
- [745] 319904.7 344802.7 346723.1 334855.9 221518.4 187126.0 228113.0 222491.5
- [753] 220461.1 239879.2 225569.8 181465.9 182019.9 228919.1 309040.8 244233.1
- [761] 257873.7 259459.6 241283.3 263123.0 267094.2 221779.8 236558.0 275362.6
- [769] 283894.0 271283.4 246403.8 222476.8 238342.9 251912.3 251110.9 242577.9
- [777] 215038.8 175914.9 215793.8 232202.1 222770.9 210137.3 211713.0 187085.8
- [785] 178268.2 220986.5 237558.6 220733.0 216802.0 214836.5 193711.0 183601.4
- [793] 227553.9 254830.2 234796.2 216749.3 215899.9 194525.5 200616.7 213897.3
- [801] 240332.3 220763.2 219172.5 223846.2 192726.5 173036.0 212092.5 216782.4
- [809] 215999.1 226491.9 222354.1 186585.0 179347.7 213167.0 214722.2 217379.5
- [817] 221645.2 215070.4 185474.1 181816.6 229854.7 252878.2 236089.0 222672.5
- [825] 219013.2 192431.7 190855.2 218474.5 226201.8 225599.3 223880.8 220398.7
- [833] 189730.2 180797.4 212901.4 216103.4 218360.3 215113.7 177747.4 183794.0
- [841] 178949.8 181332.0 219845.6 218903.7 217970.8 189681.6 189352.2 186176.1
- [849] 222725.3 226894.0 227838.3 234151.4 234875.5 205593.8 203667.0 237885.7
- [857] 240615.3 240363.4 241350.2 236749.7 206345.5 192716.0 229354.4 230016.4
- [865] 224463.7 216959.2 212630.5 188999.1 181507.5 217062.3 224377.1 221941.0
- [873] 222489.9 221565.9 195666.9 190311.1 226051.0 226917.5 230292.7 234660.4
- [881] 231848.6 201038.3 199712.9 232587.6 235011.4 230997.0 232087.5 234671.5
- [889] 202432.3 196719.7 206504.6 235778.2 241099.4 243616.7 237212.6 212136.6
- [897] 203358.2 241320.6 244756.8 244588.3 252897.4 239694.8 211049.4 205688.8
- [905] 245357.6 261774.5 248247.6 243389.6 241591.5 218874.1 220295.3 255005.6
- [913] 254810.1 245086.5 247866.9 249052.0 218406.7 212914.8 241260.0 242972.5
- [921] 257599.1 257980.6 247654.7 227029.0 220939.7 258828.7 264182.7 253523.2
- [929] 259805.0 256235.5 223482.5 215774.8 258827.8 268984.6 267235.5 269354.4
- [937] 253274.8 223156.8 211216.0 242072.5 246404.6 237884.1 239618.7 263314.8
- [945] 227576.9 221635.0 256619.7 250481.6 246815.5 252009.8 243569.0 217187.4
- [953] 212913.6 261058.6 262475.1 253515.6 249853.0 244954.9 221146.3 210597.7
- [961] 250250.5 248265.0 247303.4 242793.7 231165.2 202580.0 200860.7 239126.8
- [969] 236932.3 233074.0 233122.1 233820.8 193010.5 189329.1 236269.6 238224.0
- [977] 241451.7 241705.4 233516.6 198105.0 186010.4 218227.6 222727.4 222021.3
- [985] 226737.3 231368.3 196583.4 185043.8 225464.1 235698.2 236132.9 241150.9
- [993] 230364.0 199898.9 187057.0 217468.4 215156.4 215466.1 217797.8 214799.6
-[1001] 184726.9 177315.9 207730.5 218174.6 224694.2 224902.4 212365.6 183748.7
-[1009] 165568.2 220771.3 216515.3 221089.9 217995.6 214055.8 186350.5 181653.7
-[1017] 221181.6 228664.6 226044.2 224403.8 214741.4 192159.3 184045.6 212657.3
-[1025] 222803.4 232982.7 224747.1 228031.4 193472.9 183279.1 212424.7 220767.4
-[1033] 218759.6 218701.5 226666.3 188263.1 186252.2 200750.6 187164.5 206219.1
-[1041] 212027.5 226861.4 205990.9 176249.7 211403.7 215166.4 222218.3 239191.2
-[1049] 224297.7 189808.2 182219.6 208039.0 211849.0 217293.3 228763.7 215411.4
-[1057] 196128.5 187542.4 222044.1 213975.1 217915.3 214967.4 212710.3 193938.7
-[1065] 212405.8 242795.3 232768.0 228167.5 235780.1 224449.1 192513.1 185887.1
-[1073] 215698.3 217047.1 219748.3 215896.4 219040.9 209287.8 197307.1 227749.3
-[1081] 231625.9 213775.6 216447.4 206098.4 189195.1 203713.4 230291.0 219995.4
-[1089] 193189.4 167042.1 166733.9 173634.6 188115.3 191596.3 186100.9 186198.5</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggraph)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidygraph)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggforce) <span class="co"># Para geom_mark_hull</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(grafo_tidy, <span class="at">layout =</span> <span class="st">"stress"</span>) <span class="sc">+</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># CAPA ARISTAS:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">color =</span> <span class="st">"gray70"</span>) <span class="sc">+</span> </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># CAPA NODOS (Con NSE para calcular tamaño en tiempo real):</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="fu">centrality_degree</span>(), <span class="at">color =</span> <span class="fu">as.factor</span>(comunidad))) <span class="sc">+</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ETIQUETAS Y TEMAS:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> name), <span class="at">check_overlap =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</div>
+</section>
 </section>
 
 </main>

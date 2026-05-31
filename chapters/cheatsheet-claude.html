@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Cheat Sheet: SNA con igraph &amp; tidygraph</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="cheatsheet-claude_files/libs/clipboard/clipboard.min.js"></script>
+<script src="cheatsheet-claude_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="cheatsheet-claude_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="cheatsheet-claude_files/libs/quarto-html/popper.min.js"></script>
+<script src="cheatsheet-claude_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="cheatsheet-claude_files/libs/quarto-html/anchor.min.js"></script>
+<link href="cheatsheet-claude_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="cheatsheet-claude_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="cheatsheet-claude_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="cheatsheet-claude_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="cheatsheet-claude_files/libs/bootstrap/bootstrap-a5ab789529c0efdc7d6891758eeead79.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#construcción-de-grafos-igraph" id="toc-construcción-de-grafos-igraph" class="nav-link active" data-scroll-target="#construcción-de-grafos-igraph">1. Construcción de Grafos (<code>igraph</code>)</a>
+  <ul class="collapse">
+  <li><a href="#desde-distintos-formatos" id="toc-desde-distintos-formatos" class="nav-link" data-scroll-target="#desde-distintos-formatos">Desde distintos formatos</a></li>
+  <li><a href="#info-básica-del-grafo" id="toc-info-básica-del-grafo" class="nav-link" data-scroll-target="#info-básica-del-grafo">Info básica del grafo</a></li>
+  </ul></li>
+  <li><a href="#atributos-de-nodos-y-aristas" id="toc-atributos-de-nodos-y-aristas" class="nav-link" data-scroll-target="#atributos-de-nodos-y-aristas">2. Atributos de Nodos y Aristas</a></li>
+  <li><a href="#visualización-con-igraph-plot" id="toc-visualización-con-igraph-plot" class="nav-link" data-scroll-target="#visualización-con-igraph-plot">3. Visualización con <code>igraph</code> (<code>plot</code>)</a>
+  <ul class="collapse">
+  <li><a href="#estructura-básica" id="toc-estructura-básica" class="nav-link" data-scroll-target="#estructura-básica">Estructura básica</a></li>
+  <li><a href="#layouts-disponibles" id="toc-layouts-disponibles" class="nav-link" data-scroll-target="#layouts-disponibles">Layouts disponibles</a></li>
+  <li><a href="#grupos-visuales-mark.groups" id="toc-grupos-visuales-mark.groups" class="nav-link" data-scroll-target="#grupos-visuales-mark.groups">Grupos visuales (<code>mark.groups</code>)</a></li>
+  <li><a href="#coloreado-condicional-de-aristas-por-facción" id="toc-coloreado-condicional-de-aristas-por-facción" class="nav-link" data-scroll-target="#coloreado-condicional-de-aristas-por-facción">Coloreado condicional de aristas (por facción)</a></li>
+  </ul></li>
+  <li><a href="#paradigma-tidygraph" id="toc-paradigma-tidygraph" class="nav-link" data-scroll-target="#paradigma-tidygraph">4. Paradigma Tidygraph</a>
+  <ul class="collapse">
+  <li><a href="#conversión-y-activación" id="toc-conversión-y-activación" class="nav-link" data-scroll-target="#conversión-y-activación">Conversión y activación</a></li>
+  <li><a href="#verbos-dplyr-en-red" id="toc-verbos-dplyr-en-red" class="nav-link" data-scroll-target="#verbos-dplyr-en-red">Verbos dplyr en red</a></li>
+  <li><a href="#pronombre-.n-cruzar-nodos-desde-aristas" id="toc-pronombre-.n-cruzar-nodos-desde-aristas" class="nav-link" data-scroll-target="#pronombre-.n-cruzar-nodos-desde-aristas">Pronombre <code>.N()</code> — cruzar nodos desde aristas</a></li>
+  <li><a href="#morphing-vistas-temporales" id="toc-morphing-vistas-temporales" class="nav-link" data-scroll-target="#morphing-vistas-temporales">Morphing — vistas temporales</a></li>
+  <li><a href="#modificaciones-estructurales" id="toc-modificaciones-estructurales" class="nav-link" data-scroll-target="#modificaciones-estructurales">Modificaciones estructurales</a></li>
+  </ul></li>
+  <li><a href="#visualización-con-ggraph" id="toc-visualización-con-ggraph" class="nav-link" data-scroll-target="#visualización-con-ggraph">5. Visualización con <code>ggraph</code></a>
+  <ul class="collapse">
+  <li><a href="#arquitectura-de-capas" id="toc-arquitectura-de-capas" class="nav-link" data-scroll-target="#arquitectura-de-capas">Arquitectura de capas</a></li>
+  <li><a href="#geoms-de-aristas-más-usados" id="toc-geoms-de-aristas-más-usados" class="nav-link" data-scroll-target="#geoms-de-aristas-más-usados">Geoms de aristas más usados</a></li>
+  <li><a href="#geoms-de-nodos" id="toc-geoms-de-nodos" class="nav-link" data-scroll-target="#geoms-de-nodos">Geoms de nodos</a></li>
+  <li><a href="#nse-calcular-métricas-directamente-en-aes" id="toc-nse-calcular-métricas-directamente-en-aes" class="nav-link" data-scroll-target="#nse-calcular-métricas-directamente-en-aes">NSE — calcular métricas directamente en <code>aes()</code></a></li>
+  <li><a href="#envolventes-de-comunidades-con-ggforce" id="toc-envolventes-de-comunidades-con-ggforce" class="nav-link" data-scroll-target="#envolventes-de-comunidades-con-ggforce">Envolventes de comunidades con <code>ggforce</code></a></li>
+  <li><a href="#gradiente-de-dirección-en-grafos-dirigidos" id="toc-gradiente-de-dirección-en-grafos-dirigidos" class="nav-link" data-scroll-target="#gradiente-de-dirección-en-grafos-dirigidos">Gradiente de dirección en grafos dirigidos</a></li>
+  <li><a href="#facetas" id="toc-facetas" class="nav-link" data-scroll-target="#facetas">Facetas</a></li>
+  </ul></li>
+  <li><a href="#métricas-de-centralidad" id="toc-métricas-de-centralidad" class="nav-link" data-scroll-target="#métricas-de-centralidad">6. Métricas de Centralidad</a>
+  <ul class="collapse">
+  <li><a href="#con-igraph-funciones-base" id="toc-con-igraph-funciones-base" class="nav-link" data-scroll-target="#con-igraph-funciones-base">Con <code>igraph</code> (funciones base)</a></li>
+  <li><a href="#con-tidygraph-dentro-de-mutate" id="toc-con-tidygraph-dentro-de-mutate" class="nav-link" data-scroll-target="#con-tidygraph-dentro-de-mutate">Con <code>tidygraph</code> (dentro de <code>mutate</code>)</a></li>
+  <li><a href="#cuándo-usar-cada-métrica" id="toc-cuándo-usar-cada-métrica" class="nav-link" data-scroll-target="#cuándo-usar-cada-métrica">Cuándo usar cada métrica</a></li>
+  </ul></li>
+  <li><a href="#análisis-estructural-global" id="toc-análisis-estructural-global" class="nav-link" data-scroll-target="#análisis-estructural-global">7. Análisis Estructural Global</a></li>
+  <li><a href="#detección-de-comunidades" id="toc-detección-de-comunidades" class="nav-link" data-scroll-target="#detección-de-comunidades">8. Detección de Comunidades</a>
+  <ul class="collapse">
+  <li><a href="#algoritmos-disponibles" id="toc-algoritmos-disponibles" class="nav-link" data-scroll-target="#algoritmos-disponibles">Algoritmos disponibles</a></li>
+  <li><a href="#cuándo-usar-cada-algoritmo" id="toc-cuándo-usar-cada-algoritmo" class="nav-link" data-scroll-target="#cuándo-usar-cada-algoritmo">Cuándo usar cada algoritmo</a></li>
+  <li><a href="#visualización-rápida-de-comunidades" id="toc-visualización-rápida-de-comunidades" class="nav-link" data-scroll-target="#visualización-rápida-de-comunidades">Visualización rápida de comunidades</a></li>
+  </ul></li>
+  <li><a href="#redes-egocéntricas" id="toc-redes-egocéntricas" class="nav-link" data-scroll-target="#redes-egocéntricas">9. Redes Egocéntricas</a></li>
+  <li><a href="#exportación" id="toc-exportación" class="nav-link" data-scroll-target="#exportación">10. Exportación</a></li>
+  <li><a href="#referencia-rápida-de-operadores-igraph" id="toc-referencia-rápida-de-operadores-igraph" class="nav-link" data-scroll-target="#referencia-rápida-de-operadores-igraph">Referencia rápida de operadores <code>igraph</code></a></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Cheat Sheet: SNA con igraph &amp; tidygraph</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+<p class="subtitle lead">Referencia rápida para examen — Temas 7, 8 y 9</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="construcción-de-grafos-igraph" class="level1">
+<h1>1. Construcción de Grafos (<code>igraph</code>)</h1>
+<section id="desde-distintos-formatos" class="level2">
+<h2 class="anchored" data-anchor-id="desde-distintos-formatos">Desde distintos formatos</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Lista de aristas (pares de nodos)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make_graph</span>(<span class="at">edges =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>, <span class="dv">2</span>,<span class="dv">3</span>, <span class="dv">3</span>,<span class="dv">1</span>))          <span class="co"># por índices</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make_graph</span>(<span class="sc">~</span> A<span class="sc">-</span>B<span class="sc">-</span>C<span class="sc">-</span>A)                          <span class="co"># por fórmula</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make_graph</span>(<span class="st">"Zachary"</span>)                          <span class="co"># grafo famoso</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Construcción secuencial (vacío + añadir)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">make_empty_graph</span>(<span class="at">n =</span> <span class="dv">0</span>, <span class="at">directed =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">vertices</span>(<span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"B"</span>,<span class="st">"C"</span>)) <span class="sc">+</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">edges</span>(<span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"C"</span>, <span class="st">"B"</span>,<span class="st">"C"</span>))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> g <span class="sc">-</span> <span class="fu">V</span>(g)[<span class="st">"A"</span>]                             <span class="co"># eliminar nodo</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Desde data frame (más habitual en datos reales)</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">from =</span> <span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"B"</span>), <span class="at">to =</span> <span class="fu">c</span>(<span class="st">"B"</span>,<span class="st">"C"</span>), <span class="at">weight =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">graph_from_data_frame</span>(df, <span class="at">directed =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Desde matriz de adyacencia</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>, <span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>, <span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>), <span class="at">nrow=</span><span class="dv">3</span>, <span class="at">byrow=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">graph.adjacency</span>(A, <span class="at">mode =</span> <span class="st">"undirected"</span>)   <span class="co"># → grafo</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">as_adjacency_matrix</span>(g, <span class="at">sparse =</span> <span class="cn">FALSE</span>)    <span class="co"># grafo → matriz</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Grafos aleatorios / sintéticos</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>g_er  <span class="ot">&lt;-</span> <span class="fu">sample_gnp</span>(<span class="dv">10</span>, <span class="fl">0.3</span>, <span class="at">directed =</span> <span class="cn">FALSE</span>) <span class="co"># Erdős-Rényi</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>g_ba  <span class="ot">&lt;-</span> <span class="fu">sample_pa</span>(<span class="dv">100</span>, <span class="at">power =</span> <span class="fl">1.2</span>, <span class="at">m =</span> <span class="dv">2</span>)    <span class="co"># Barabási-Albert</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="fu">make_tree</span>(<span class="dv">20</span>, <span class="at">children =</span> <span class="dv">3</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">make_full_graph</span>(<span class="dv">6</span>)                              <span class="co"># clique</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">make_star</span>(<span class="dv">10</span>)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="fu">make_lattice</span>(<span class="at">dimvector =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="info-básica-del-grafo" class="level2">
+<h2 class="anchored" data-anchor-id="info-básica-del-grafo">Info básica del grafo</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">vcount</span>(g)        <span class="co"># nº nodos</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ecount</span>(g)        <span class="co"># nº aristas</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">is.directed</span>(g)   <span class="co"># TRUE/FALSE</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">is_simple</span>(g)     <span class="co"># sin bucles ni aristas múltiples</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="atributos-de-nodos-y-aristas" class="level1">
+<h1>2. Atributos de Nodos y Aristas</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Leer / asignar atributos</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>name   <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"N"</span>, <span class="dv">1</span><span class="sc">:</span><span class="fu">vcount</span>(g))     <span class="co"># nombre</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>color  <span class="ot">&lt;-</span> <span class="st">"lightblue"</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>size   <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>shape  <span class="ot">&lt;-</span> <span class="st">"circle"</span>                     <span class="co"># "circle", "rectangle"</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>weight <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="fu">ecount</span>(g), <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>width  <span class="ot">&lt;-</span> <span class="fu">E</span>(g)<span class="sc">$</span>weight <span class="sc">*</span> <span class="fl">0.5</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>color  <span class="ot">&lt;-</span> <span class="st">"gray80"</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>curved <span class="ot">&lt;-</span> <span class="fl">0.2</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Asignación condicional</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">34</span>)]<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="st">"orange"</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>isVowel <span class="ot">&lt;-</span> <span class="fu">V</span>(g)<span class="sc">$</span>name <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"E"</span>,<span class="st">"I"</span>,<span class="st">"O"</span>,<span class="st">"U"</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)[isVowel]<span class="sc">$</span>shape <span class="ot">&lt;-</span> <span class="st">"square"</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Selección de aristas</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[v1 <span class="sc">%--%</span> v1]<span class="sc">$</span>width <span class="ot">&lt;-</span> <span class="dv">4</span>       <span class="co"># bidireccional (ambas dir.)</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[v1 <span class="sc">%-&gt;%</span> v2]<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="st">"red"</span>   <span class="co"># solo A→B</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[v1 <span class="sc">%-&lt;%</span> v2]                  <span class="co"># solo B→A</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="fu">which_mutual</span>(g)                    <span class="co"># vector lógico aristas mutuas</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="visualización-con-igraph-plot" class="level1">
+<h1>3. Visualización con <code>igraph</code> (<code>plot</code>)</h1>
+<section id="estructura-básica" class="level2">
+<h2 class="anchored" data-anchor-id="estructura-básica">Estructura básica</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">layout        =</span> <span class="fu">layout_with_fr</span>(g),   <span class="co"># algoritmo de disposición</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.size   =</span> <span class="dv">15</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.color  =</span> <span class="fu">V</span>(g)<span class="sc">$</span>color,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.shape  =</span> <span class="st">"circle"</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label  =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label.cex   =</span> <span class="fl">0.8</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label.color =</span> <span class="st">"black"</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label.dist  =</span> <span class="fl">1.2</span>,            <span class="co"># aleja la etiqueta del centro</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.frame.color =</span> <span class="st">"white"</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.color    =</span> <span class="fu">E</span>(g)<span class="sc">$</span>color,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.width    =</span> <span class="fu">E</span>(g)<span class="sc">$</span>width,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.curved   =</span> <span class="fl">0.2</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.arrow.size =</span> <span class="fl">0.5</span>,               <span class="co"># solo grafos dirigidos</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">main =</span> <span class="st">"Título"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="layouts-disponibles" class="level2">
+<h2 class="anchored" data-anchor-id="layouts-disponibles">Layouts disponibles</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Función</th>
+<th>Cuándo usarla</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>layout_with_fr</code></td>
+<td>Estándar — revela clusters (Fruchterman-Reingold)</td>
+</tr>
+<tr class="even">
+<td><code>layout_with_kk</code></td>
+<td>Distancias proporcionales a caminos cortos (Kamada-Kawai)</td>
+</tr>
+<tr class="odd">
+<td><code>layout_in_circle</code></td>
+<td>Redes densas o cíclicas</td>
+</tr>
+<tr class="even">
+<td><code>layout_on_grid</code></td>
+<td>Inspección individual, sin importar topología</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="grupos-visuales-mark.groups" class="level2">
+<h2 class="anchored" data-anchor-id="grupos-visuales-mark.groups">Grupos visuales (<code>mark.groups</code>)</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>groupList <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">g1 =</span> <span class="fu">which</span>(isVowel), <span class="at">g2 =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g, <span class="at">layout =</span> layout_with_fr,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">mark.groups  =</span> groupList,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">mark.col     =</span> <span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">0</span>,<span class="fl">0.3</span>,<span class="dv">1</span>,<span class="fl">0.5</span>), <span class="fu">rgb</span>(<span class="fl">0.8</span>,<span class="fl">0.4</span>,<span class="fl">0.1</span>,<span class="fl">0.5</span>)),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mark.border  =</span> <span class="cn">NA</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="coloreado-condicional-de-aristas-por-facción" class="level2">
+<h2 class="anchored" data-anchor-id="coloreado-condicional-de-aristas-por-facción">Coloreado condicional de aristas (por facción)</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>edge_nodes  <span class="ot">&lt;-</span> <span class="fu">as_edgelist</span>(g, <span class="at">names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>edge_colors <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ecount</span>(g), <span class="cf">function</span>(i) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">V</span>(g)<span class="sc">$</span>Faction[edge_nodes[i,<span class="dv">1</span>]] <span class="sc">==</span> <span class="fu">V</span>(g)<span class="sc">$</span>Faction[edge_nodes[i,<span class="dv">2</span>]])</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="st">"skyblue"</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="fu">return</span>(<span class="st">"gray80"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g, <span class="at">edge.color =</span> edge_colors)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="paradigma-tidygraph" class="level1">
+<h1>4. Paradigma Tidygraph</h1>
+<section id="conversión-y-activación" class="level2">
+<h2 class="anchored" data-anchor-id="conversión-y-activación">Conversión y activación</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidygraph)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="ot">&lt;-</span> <span class="fu">as_tbl_graph</span>(karate)     <span class="co"># igraph → tbl_graph</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">.active</span>(karate_tidy)                    <span class="co"># ver tabla activa ("nodes"/"edges")</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Activar tabla de nodos o aristas</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="sc">%&gt;%</span> <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span> ...</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="sc">%&gt;%</span> <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span> ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="verbos-dplyr-en-red" class="level2">
+<h2 class="anchored" data-anchor-id="verbos-dplyr-en-red">Verbos dplyr en red</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>grafo <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">grado     =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">comunidad =</span> <span class="fu">as.factor</span>(<span class="fu">group_infomap</span>()),</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">es_lider  =</span> grado <span class="sc">&gt;</span> <span class="dv">15</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">node_is_isolated</span>()) <span class="sc">%&gt;%</span>       <span class="co"># elimina nodos sin conexión</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">puente =</span> <span class="fu">centrality_edge_betweenness</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(puente <span class="sc">&gt;</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="pronombre-.n-cruzar-nodos-desde-aristas" class="level2">
+<h2 class="anchored" data-anchor-id="pronombre-.n-cruzar-nodos-desde-aristas">Pronombre <code>.N()</code> — cruzar nodos desde aristas</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">fac_origen  =</span> <span class="fu">.N</span>()<span class="sc">$</span>Faction[from],   <span class="co"># atributo del nodo origen</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">fac_destino =</span> <span class="fu">.N</span>()<span class="sc">$</span>Faction[to],     <span class="co"># atributo del nodo destino</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">es_cruce    =</span> fac_origen <span class="sc">!=</span> fac_destino</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="morphing-vistas-temporales" class="level2">
+<h2 class="anchored" data-anchor-id="morphing-vistas-temporales">Morphing — vistas temporales</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Patrón: morph → operar → unmorph</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>grafo <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">morph</span>(to_shortest_path, <span class="at">from =</span> <span class="dv">1</span>, <span class="at">to =</span> <span class="dv">34</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">en_ruta =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">en_ruta =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unmorph</span>()</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># crystallise() → lista de tbl_graph independientes</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>lista_comps <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span> <span class="fu">morph</span>(to_components) <span class="sc">%&gt;%</span> <span class="fu">crystallise</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Morpher</th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>to_shortest_path(from, to)</code></td>
+<td>Camino mínimo entre dos nodos</td>
+</tr>
+<tr class="even">
+<td><code>to_local_neighborhood(node, order)</code></td>
+<td>Ego-red de orden n</td>
+</tr>
+<tr class="odd">
+<td><code>to_contracted(atributo)</code></td>
+<td>Colapsa grupos en súper-nodos</td>
+</tr>
+<tr class="even">
+<td><code>to_components()</code></td>
+<td>Subgrafos inconexos separados</td>
+</tr>
+<tr class="odd">
+<td><code>to_minimum_spanning_tree()</code></td>
+<td>Esqueleto mínimo de conectividad</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="modificaciones-estructurales" class="level2">
+<h2 class="anchored" data-anchor-id="modificaciones-estructurales">Modificaciones estructurales</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_nodes</span>(<span class="fu">data.frame</span>(<span class="at">name =</span> <span class="st">"Nuevo"</span>, <span class="at">Faction =</span> <span class="dv">1</span>))   <span class="co"># añadir nodo</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_edges</span>(<span class="fu">data.frame</span>(<span class="at">from =</span> <span class="dv">35</span>, <span class="at">to =</span> <span class="dv">1</span>))             <span class="co"># añadir arista</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">graph_join</span>(red_extra, <span class="at">by =</span> <span class="st">"name"</span>)                    <span class="co"># fusionar dos redes</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span> <span class="fu">slice</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">reroute</span>(<span class="at">from=</span><span class="dv">1</span>, <span class="at">to=</span><span class="dv">2</span>) <span class="co"># redirigir arista</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="visualización-con-ggraph" class="level1">
+<h1>5. Visualización con <code>ggraph</code></h1>
+<section id="arquitectura-de-capas" class="level2">
+<h2 class="anchored" data-anchor-id="arquitectura-de-capas">Arquitectura de capas</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggraph)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(g_tidy, <span class="at">layout =</span> <span class="st">"fr"</span>) <span class="sc">+</span>          <span class="co"># "fr", "kk", "stress", "circle", "tree"</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">color =</span> <span class="fu">factor</span>(<span class="fu">group_louvain</span>()))) <span class="sc">+</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_viridis_d</span>(<span class="at">option =</span> <span class="st">"plasma"</span>) <span class="sc">+</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Mi red"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="geoms-de-aristas-más-usados" class="level2">
+<h2 class="anchored" data-anchor-id="geoms-de-aristas-más-usados">Geoms de aristas más usados</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Geom</th>
+<th>Cuándo usarlo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>geom_edge_link()</code></td>
+<td>Caso general — línea recta</td>
+</tr>
+<tr class="even">
+<td><code>geom_edge_fan()</code></td>
+<td>Múltiples aristas entre mismos nodos (multígrafo)</td>
+</tr>
+<tr class="odd">
+<td><code>geom_edge_parallel()</code></td>
+<td>Red multicapa — desplaza aristas por tipo</td>
+</tr>
+<tr class="even">
+<td><code>geom_edge_diagonal()</code></td>
+<td>Estructuras jerárquicas / árboles</td>
+</tr>
+<tr class="odd">
+<td><code>geom_edge_arc()</code></td>
+<td>Layout circular — aristas curvadas</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="geoms-de-nodos" class="level2">
+<h2 class="anchored" data-anchor-id="geoms-de-nodos">Geoms de nodos</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="fu">centrality_degree</span>(), <span class="at">color =</span> comunidad))</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> name), <span class="at">check_overlap =</span> <span class="cn">TRUE</span>, <span class="at">vjust =</span> <span class="fl">1.5</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_label</span>(<span class="fu">aes</span>(<span class="at">label =</span> name))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="nse-calcular-métricas-directamente-en-aes" class="level2">
+<h2 class="anchored" data-anchor-id="nse-calcular-métricas-directamente-en-aes">NSE — calcular métricas directamente en <code>aes()</code></h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Sin necesidad de mutate previo</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_point</span>(<span class="fu">aes</span>(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">size  =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">color =</span> <span class="fu">as.factor</span>(<span class="fu">group_infomap</span>())</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_edge_link</span>(<span class="fu">aes</span>(<span class="at">alpha =</span> <span class="fu">centrality_edge_betweenness</span>()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="envolventes-de-comunidades-con-ggforce" class="level2">
+<h2 class="anchored" data-anchor-id="envolventes-de-comunidades-con-ggforce">Envolventes de comunidades con <code>ggforce</code></h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggforce)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>g_tidy <span class="ot">&lt;-</span> <span class="fu">as_tbl_graph</span>(karate) <span class="sc">%&gt;%</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">as.factor</span>(<span class="fu">group_louvain</span>()))</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(g_tidy, <span class="at">layout =</span> <span class="st">"nicely"</span>) <span class="sc">+</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_mark_hull</span>(<span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">fill =</span> comunidad, <span class="at">group =</span> comunidad),</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">color =</span> <span class="cn">NA</span>, <span class="at">concavity =</span> <span class="dv">10</span>, <span class="at">expand =</span> <span class="fu">unit</span>(<span class="dv">2</span>, <span class="st">"mm"</span>)) <span class="sc">+</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">color =</span> <span class="st">"gray70"</span>) <span class="sc">+</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> comunidad), <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="gradiente-de-dirección-en-grafos-dirigidos" class="level2">
+<h2 class="anchored" data-anchor-id="gradiente-de-dirección-en-grafos-dirigidos">Gradiente de dirección en grafos dirigidos</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_edge_fan</span>(<span class="fu">aes</span>(<span class="at">alpha =</span> <span class="fu">after_stat</span>(index)), <span class="at">color =</span> <span class="st">"darkred"</span>,</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>              <span class="at">show.legend =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># El alpha aumenta desde origen → destino, indicando dirección</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="facetas" class="level2">
+<h2 class="anchored" data-anchor-id="facetas">Facetas</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>g_tidy <span class="sc">%&gt;%</span> <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Sede =</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"Norte"</span>,<span class="st">"Sur"</span>), <span class="fu">n</span>(), <span class="at">replace =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggraph</span>(<span class="st">"stress"</span>) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="at">color =</span> <span class="st">"orange"</span>, <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_nodes</span>(<span class="sc">~</span> Sede) <span class="sc">+</span> <span class="fu">theme_graph</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="métricas-de-centralidad" class="level1">
+<h1>6. Métricas de Centralidad</h1>
+<section id="con-igraph-funciones-base" class="level2">
+<h2 class="anchored" data-anchor-id="con-igraph-funciones-base">Con <code>igraph</code> (funciones base)</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">degree</span>(g)                          <span class="co"># grado total</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"in"</span>)             <span class="co"># grado de entrada (dirigido)</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>)            <span class="co"># grado de salida (dirigido)</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">betweenness</span>(g)                     <span class="co"># intermediación</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">closeness</span>(g)                       <span class="co"># cercanía (¡cuidado en dirigidos!)</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="fu">harmonic_centrality</span>(g)             <span class="co"># cercanía armónica (robusta)</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">eigen_centrality</span>(g)<span class="sc">$</span>vector         <span class="co"># eigenvector (influencia por vecinos)</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">hub_score</span>(g)<span class="sc">$</span>vector                <span class="co"># HITS: hubs</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">authority_score</span>(g)<span class="sc">$</span>vector          <span class="co"># HITS: authorities</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<blockquote class="blockquote">
+<p><strong>Closeness en dirigidos:</strong> usar <code>harmonic_centrality()</code> — penaliza correctamente nodos aislados (evita el “efecto isla”).</p>
+</blockquote>
+</section>
+<section id="con-tidygraph-dentro-de-mutate" class="level2">
+<h2 class="anchored" data-anchor-id="con-tidygraph-dentro-de-mutate">Con <code>tidygraph</code> (dentro de <code>mutate</code>)</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">degree       =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">betweenness  =</span> <span class="fu">centrality_betweenness</span>(),</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">closeness    =</span> <span class="fu">centrality_closeness</span>(),</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">pagerank     =</span> <span class="fu">centrality_pagerank</span>(),</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">eigen        =</span> <span class="fu">centrality_eigen</span>(),</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge_btw     =</span> <span class="fu">centrality_edge_betweenness</span>()  <span class="co"># sobre aristas</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="cuándo-usar-cada-métrica" class="level2">
+<h2 class="anchored" data-anchor-id="cuándo-usar-cada-métrica">Cuándo usar cada métrica</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Métrica</th>
+<th>Objetivo</th>
+<th>Ejemplo de uso</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Degree</strong></td>
+<td>Popularidad, actividad local</td>
+<td>Influencers, nodos con alta carga</td>
+</tr>
+<tr class="even">
+<td><strong>Betweenness</strong></td>
+<td>Control de flujo, SPOF</td>
+<td>Puntos únicos de fallo, gatekeepers</td>
+</tr>
+<tr class="odd">
+<td><strong>Closeness</strong></td>
+<td>Rapidez de difusión</td>
+<td>Dónde poner caché, vacunación</td>
+</tr>
+<tr class="even">
+<td><strong>PageRank / Eigenvector</strong></td>
+<td>Prestigio por calidad de vecinos</td>
+<td>Líderes de opinión</td>
+</tr>
+<tr class="odd">
+<td><strong>HITS Hubs</strong></td>
+<td>Nodos que apuntan a buenas autoridades</td>
+<td>Medios/agregadores</td>
+</tr>
+<tr class="even">
+<td><strong>HITS Authorities</strong></td>
+<td>Nodos muy referenciados por buenos hubs</td>
+<td>Productores de contenido</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="análisis-estructural-global" class="level1">
+<h1>7. Análisis Estructural Global</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">diameter</span>(g)                                    <span class="co"># camino más corto más largo</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">shortest_paths</span>(g, <span class="at">from =</span> <span class="st">"1"</span>, <span class="at">to =</span> <span class="st">"10"</span>)<span class="sc">$</span>vpath <span class="co"># ruta mínima</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">edge_betweenness</span>(g)                            <span class="co"># betweenness de aristas</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">edge_density</span>(g)                                <span class="co"># densidad (aristas / posibles)</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Clustering (transitividad)</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">transitivity</span>(g, <span class="at">type =</span> <span class="st">"global"</span>)               <span class="co"># C global</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">transitivity</span>(g, <span class="at">type =</span> <span class="st">"local"</span>)                <span class="co"># C por nodo</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="co"># nodos con C≈0 son brokers (agujeros estructurales)</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>brokers <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">transitivity</span>(g, <span class="at">type =</span> <span class="st">"local"</span>) <span class="sc">&lt;</span> <span class="fl">0.1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Interpretación del clustering local:</strong></p>
+<ul>
+<li><code>C = 1</code> → clique perfecta (todos mis vecinos se conocen entre sí)<br>
+</li>
+<li><code>C ≈ 0</code> → agujero estructural (el nodo es el único puente entre grupos)</li>
+</ul>
+<hr>
+</section>
+<section id="detección-de-comunidades" class="level1">
+<h1>8. Detección de Comunidades</h1>
+<section id="algoritmos-disponibles" class="level2">
+<h2 class="anchored" data-anchor-id="algoritmos-disponibles">Algoritmos disponibles</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># igraph base</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_edge_betweenness</span>(g)    <span class="co"># elimina puentes progresivamente</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_walktrap</span>(g)            <span class="co"># random walks (caminante atrapado)</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_fast_greedy</span>(g)         <span class="co"># bottom-up, optimiza modularidad</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_leading_eigen</span>(g)       <span class="co"># top-down, vectores propios</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_label_prop</span>(g)          <span class="co"># propagación de etiquetas (muy rápido)</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_louvain</span>(g)             <span class="co"># Louvain — escalable, gran escala ✓</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="co"># tidygraph (dentro de mutate)</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_louvain</span>())</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_infomap</span>())</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_edge_betweenness</span>())</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_walktrap</span>())</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_label_prop</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="cuándo-usar-cada-algoritmo" class="level2">
+<h2 class="anchored" data-anchor-id="cuándo-usar-cada-algoritmo">Cuándo usar cada algoritmo</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Algoritmo</th>
+<th>Escala</th>
+<th>Criterio de elección</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Louvain</strong></td>
+<td>Grande</td>
+<td>Velocidad + calidad general</td>
+</tr>
+<tr class="even">
+<td><strong>Infomap</strong></td>
+<td>Mediana</td>
+<td>Flujos de información (teoría de la información)</td>
+</tr>
+<tr class="odd">
+<td><strong>Edge Betweenness</strong></td>
+<td>Pequeña</td>
+<td>Interpretabilidad, puentes explícitos</td>
+</tr>
+<tr class="even">
+<td><strong>Label Propagation</strong></td>
+<td>Muy grande</td>
+<td>Máxima velocidad, grafos masivos</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="visualización-rápida-de-comunidades" class="level2">
+<h2 class="anchored" data-anchor-id="visualización-rápida-de-comunidades">Visualización rápida de comunidades</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>comm <span class="ot">&lt;-</span> <span class="fu">cluster_louvain</span>(g)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(comm, g, <span class="at">main =</span> <span class="st">"Comunidades"</span>)   <span class="co"># igraph base con colores automáticos</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="redes-egocéntricas" class="level1">
+<h1>9. Redes Egocéntricas</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ego-red de orden 1 (yo + mis contactos directos)</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ego</span>(g, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">nodes =</span> <span class="dv">1</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Con tidygraph/morphing</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>grafo_ego <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">morph</span>(to_local_neighborhood, <span class="at">node =</span> <span class="dv">1</span>, <span class="at">order =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">es_vecino =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unmorph</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="exportación" class="level1">
+<h1>10. Exportación</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_graph</span>(g, <span class="st">"red.graphml"</span>, <span class="at">format =</span> <span class="st">"graphml"</span>)   <span class="co"># formato XML estándar</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="referencia-rápida-de-operadores-igraph" class="level1">
+<h1>Referencia rápida de operadores <code>igraph</code></h1>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Operador</th>
+<th>Función</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>V(g)</code></td>
+<td>Secuencia de vértices</td>
+</tr>
+<tr class="even">
+<td><code>E(g)</code></td>
+<td>Secuencia de aristas</td>
+</tr>
+<tr class="odd">
+<td><code>V(g)[cond]</code></td>
+<td>Filtrar vértices por condición</td>
+</tr>
+<tr class="even">
+<td><code>E(g)[A %--% B]</code></td>
+<td>Aristas entre A y B (sin dir.)</td>
+</tr>
+<tr class="odd">
+<td><code>E(g)[A %-&gt;% B]</code></td>
+<td>Aristas de A hacia B</td>
+</tr>
+<tr class="even">
+<td><code>E(g)[A %&lt;-% B]</code></td>
+<td>Aristas de B hacia A</td>
+</tr>
+<tr class="odd">
+<td><code>as_edgelist(g)</code></td>
+<td>Matriz (from, to) de aristas</td>
+</tr>
+<tr class="even">
+<td><code>which_mutual(g)</code></td>
+<td>Vector lógico de aristas mutuas</td>
+</tr>
+<tr class="odd">
+<td><code>node_is_isolated()</code></td>
+<td>Nodos sin ninguna conexión (tidygraph)</td>
+</tr>
+</tbody>
+</table>
+<!-- -->
+
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Cheat Sheet: SNA con igraph &amp; tidygraph"</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Referencia rápida para examen — Temas 7, 8 y 9"</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co">    toc: true</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-depth: 3</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-location: left</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="co">    theme: cosmo</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: false</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="co">    fontsize: 0.85em</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="co">  eval: false</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="fu"># 1. Construcción de Grafos (`igraph`)</span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="fu">## Desde distintos formatos</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Lista de aristas (pares de nodos)</span></span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a><span class="fu">make_graph</span>(<span class="at">edges =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>, <span class="dv">2</span>,<span class="dv">3</span>, <span class="dv">3</span>,<span class="dv">1</span>))          <span class="co"># por índices</span></span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a><span class="fu">make_graph</span>(<span class="sc">~</span> A<span class="sc">-</span>B<span class="sc">-</span>C<span class="sc">-</span>A)                          <span class="co"># por fórmula</span></span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a><span class="fu">make_graph</span>(<span class="st">"Zachary"</span>)                          <span class="co"># grafo famoso</span></span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Construcción secuencial (vacío + añadir)</span></span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">make_empty_graph</span>(<span class="at">n =</span> <span class="dv">0</span>, <span class="at">directed =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">vertices</span>(<span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"B"</span>,<span class="st">"C"</span>)) <span class="sc">+</span></span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">edges</span>(<span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"C"</span>, <span class="st">"B"</span>,<span class="st">"C"</span>))</span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> g <span class="sc">-</span> <span class="fu">V</span>(g)[<span class="st">"A"</span>]                             <span class="co"># eliminar nodo</span></span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Desde data frame (más habitual en datos reales)</span></span>
+<span id="cb25-36"><a href="#cb25-36" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">from =</span> <span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"B"</span>), <span class="at">to =</span> <span class="fu">c</span>(<span class="st">"B"</span>,<span class="st">"C"</span>), <span class="at">weight =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb25-37"><a href="#cb25-37" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">graph_from_data_frame</span>(df, <span class="at">directed =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb25-38"><a href="#cb25-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-39"><a href="#cb25-39" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Desde matriz de adyacencia</span></span>
+<span id="cb25-40"><a href="#cb25-40" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>, <span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>, <span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>), <span class="at">nrow=</span><span class="dv">3</span>, <span class="at">byrow=</span><span class="cn">TRUE</span>)</span>
+<span id="cb25-41"><a href="#cb25-41" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">graph.adjacency</span>(A, <span class="at">mode =</span> <span class="st">"undirected"</span>)   <span class="co"># → grafo</span></span>
+<span id="cb25-42"><a href="#cb25-42" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">as_adjacency_matrix</span>(g, <span class="at">sparse =</span> <span class="cn">FALSE</span>)    <span class="co"># grafo → matriz</span></span>
+<span id="cb25-43"><a href="#cb25-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-44"><a href="#cb25-44" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Grafos aleatorios / sintéticos</span></span>
+<span id="cb25-45"><a href="#cb25-45" aria-hidden="true" tabindex="-1"></a>g_er  <span class="ot">&lt;-</span> <span class="fu">sample_gnp</span>(<span class="dv">10</span>, <span class="fl">0.3</span>, <span class="at">directed =</span> <span class="cn">FALSE</span>) <span class="co"># Erdős-Rényi</span></span>
+<span id="cb25-46"><a href="#cb25-46" aria-hidden="true" tabindex="-1"></a>g_ba  <span class="ot">&lt;-</span> <span class="fu">sample_pa</span>(<span class="dv">100</span>, <span class="at">power =</span> <span class="fl">1.2</span>, <span class="at">m =</span> <span class="dv">2</span>)    <span class="co"># Barabási-Albert</span></span>
+<span id="cb25-47"><a href="#cb25-47" aria-hidden="true" tabindex="-1"></a><span class="fu">make_tree</span>(<span class="dv">20</span>, <span class="at">children =</span> <span class="dv">3</span>)</span>
+<span id="cb25-48"><a href="#cb25-48" aria-hidden="true" tabindex="-1"></a><span class="fu">make_full_graph</span>(<span class="dv">6</span>)                              <span class="co"># clique</span></span>
+<span id="cb25-49"><a href="#cb25-49" aria-hidden="true" tabindex="-1"></a><span class="fu">make_star</span>(<span class="dv">10</span>)</span>
+<span id="cb25-50"><a href="#cb25-50" aria-hidden="true" tabindex="-1"></a><span class="fu">make_lattice</span>(<span class="at">dimvector =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>))</span>
+<span id="cb25-51"><a href="#cb25-51" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-52"><a href="#cb25-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-53"><a href="#cb25-53" aria-hidden="true" tabindex="-1"></a><span class="fu">## Info básica del grafo</span></span>
+<span id="cb25-54"><a href="#cb25-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-55"><a href="#cb25-55" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-56"><a href="#cb25-56" aria-hidden="true" tabindex="-1"></a><span class="fu">vcount</span>(g)        <span class="co"># nº nodos</span></span>
+<span id="cb25-57"><a href="#cb25-57" aria-hidden="true" tabindex="-1"></a><span class="fu">ecount</span>(g)        <span class="co"># nº aristas</span></span>
+<span id="cb25-58"><a href="#cb25-58" aria-hidden="true" tabindex="-1"></a><span class="fu">is.directed</span>(g)   <span class="co"># TRUE/FALSE</span></span>
+<span id="cb25-59"><a href="#cb25-59" aria-hidden="true" tabindex="-1"></a><span class="fu">is_simple</span>(g)     <span class="co"># sin bucles ni aristas múltiples</span></span>
+<span id="cb25-60"><a href="#cb25-60" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-61"><a href="#cb25-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-62"><a href="#cb25-62" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-63"><a href="#cb25-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-64"><a href="#cb25-64" aria-hidden="true" tabindex="-1"></a><span class="fu"># 2. Atributos de Nodos y Aristas</span></span>
+<span id="cb25-65"><a href="#cb25-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-66"><a href="#cb25-66" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-67"><a href="#cb25-67" aria-hidden="true" tabindex="-1"></a><span class="co"># Leer / asignar atributos</span></span>
+<span id="cb25-68"><a href="#cb25-68" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>name   <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"N"</span>, <span class="dv">1</span><span class="sc">:</span><span class="fu">vcount</span>(g))     <span class="co"># nombre</span></span>
+<span id="cb25-69"><a href="#cb25-69" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>color  <span class="ot">&lt;-</span> <span class="st">"lightblue"</span></span>
+<span id="cb25-70"><a href="#cb25-70" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>size   <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb25-71"><a href="#cb25-71" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)<span class="sc">$</span>shape  <span class="ot">&lt;-</span> <span class="st">"circle"</span>                     <span class="co"># "circle", "rectangle"</span></span>
+<span id="cb25-72"><a href="#cb25-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-73"><a href="#cb25-73" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>weight <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="fu">ecount</span>(g), <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-74"><a href="#cb25-74" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>width  <span class="ot">&lt;-</span> <span class="fu">E</span>(g)<span class="sc">$</span>weight <span class="sc">*</span> <span class="fl">0.5</span></span>
+<span id="cb25-75"><a href="#cb25-75" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>color  <span class="ot">&lt;-</span> <span class="st">"gray80"</span></span>
+<span id="cb25-76"><a href="#cb25-76" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)<span class="sc">$</span>curved <span class="ot">&lt;-</span> <span class="fl">0.2</span></span>
+<span id="cb25-77"><a href="#cb25-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-78"><a href="#cb25-78" aria-hidden="true" tabindex="-1"></a><span class="co"># Asignación condicional</span></span>
+<span id="cb25-79"><a href="#cb25-79" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">34</span>)]<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="st">"orange"</span></span>
+<span id="cb25-80"><a href="#cb25-80" aria-hidden="true" tabindex="-1"></a>isVowel <span class="ot">&lt;-</span> <span class="fu">V</span>(g)<span class="sc">$</span>name <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"A"</span>,<span class="st">"E"</span>,<span class="st">"I"</span>,<span class="st">"O"</span>,<span class="st">"U"</span>)</span>
+<span id="cb25-81"><a href="#cb25-81" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(g)[isVowel]<span class="sc">$</span>shape <span class="ot">&lt;-</span> <span class="st">"square"</span></span>
+<span id="cb25-82"><a href="#cb25-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-83"><a href="#cb25-83" aria-hidden="true" tabindex="-1"></a><span class="co"># Selección de aristas</span></span>
+<span id="cb25-84"><a href="#cb25-84" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[v1 <span class="sc">%--%</span> v1]<span class="sc">$</span>width <span class="ot">&lt;-</span> <span class="dv">4</span>       <span class="co"># bidireccional (ambas dir.)</span></span>
+<span id="cb25-85"><a href="#cb25-85" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[v1 <span class="sc">%-&gt;%</span> v2]<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="st">"red"</span>   <span class="co"># solo A→B</span></span>
+<span id="cb25-86"><a href="#cb25-86" aria-hidden="true" tabindex="-1"></a><span class="fu">E</span>(g)[v1 <span class="sc">%-&lt;%</span> v2]                  <span class="co"># solo B→A</span></span>
+<span id="cb25-87"><a href="#cb25-87" aria-hidden="true" tabindex="-1"></a><span class="fu">which_mutual</span>(g)                    <span class="co"># vector lógico aristas mutuas</span></span>
+<span id="cb25-88"><a href="#cb25-88" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-89"><a href="#cb25-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-90"><a href="#cb25-90" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-91"><a href="#cb25-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-92"><a href="#cb25-92" aria-hidden="true" tabindex="-1"></a><span class="fu"># 3. Visualización con `igraph` (`plot`)</span></span>
+<span id="cb25-93"><a href="#cb25-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-94"><a href="#cb25-94" aria-hidden="true" tabindex="-1"></a><span class="fu">## Estructura básica</span></span>
+<span id="cb25-95"><a href="#cb25-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-96"><a href="#cb25-96" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-97"><a href="#cb25-97" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g,</span>
+<span id="cb25-98"><a href="#cb25-98" aria-hidden="true" tabindex="-1"></a>  <span class="at">layout        =</span> <span class="fu">layout_with_fr</span>(g),   <span class="co"># algoritmo de disposición</span></span>
+<span id="cb25-99"><a href="#cb25-99" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.size   =</span> <span class="dv">15</span>,</span>
+<span id="cb25-100"><a href="#cb25-100" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.color  =</span> <span class="fu">V</span>(g)<span class="sc">$</span>color,</span>
+<span id="cb25-101"><a href="#cb25-101" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.shape  =</span> <span class="st">"circle"</span>,</span>
+<span id="cb25-102"><a href="#cb25-102" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label  =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name,</span>
+<span id="cb25-103"><a href="#cb25-103" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label.cex   =</span> <span class="fl">0.8</span>,</span>
+<span id="cb25-104"><a href="#cb25-104" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label.color =</span> <span class="st">"black"</span>,</span>
+<span id="cb25-105"><a href="#cb25-105" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.label.dist  =</span> <span class="fl">1.2</span>,            <span class="co"># aleja la etiqueta del centro</span></span>
+<span id="cb25-106"><a href="#cb25-106" aria-hidden="true" tabindex="-1"></a>  <span class="at">vertex.frame.color =</span> <span class="st">"white"</span>,</span>
+<span id="cb25-107"><a href="#cb25-107" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.color    =</span> <span class="fu">E</span>(g)<span class="sc">$</span>color,</span>
+<span id="cb25-108"><a href="#cb25-108" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.width    =</span> <span class="fu">E</span>(g)<span class="sc">$</span>width,</span>
+<span id="cb25-109"><a href="#cb25-109" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.curved   =</span> <span class="fl">0.2</span>,</span>
+<span id="cb25-110"><a href="#cb25-110" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge.arrow.size =</span> <span class="fl">0.5</span>,               <span class="co"># solo grafos dirigidos</span></span>
+<span id="cb25-111"><a href="#cb25-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">main =</span> <span class="st">"Título"</span>)</span>
+<span id="cb25-112"><a href="#cb25-112" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-113"><a href="#cb25-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-114"><a href="#cb25-114" aria-hidden="true" tabindex="-1"></a><span class="fu">## Layouts disponibles</span></span>
+<span id="cb25-115"><a href="#cb25-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-116"><a href="#cb25-116" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Función <span class="pp">|</span> Cuándo usarla <span class="pp">|</span></span>
+<span id="cb25-117"><a href="#cb25-117" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb25-118"><a href="#cb25-118" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`layout_with_fr`</span> <span class="pp">|</span> Estándar — revela clusters (Fruchterman-Reingold) <span class="pp">|</span></span>
+<span id="cb25-119"><a href="#cb25-119" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`layout_with_kk`</span> <span class="pp">|</span> Distancias proporcionales a caminos cortos (Kamada-Kawai) <span class="pp">|</span></span>
+<span id="cb25-120"><a href="#cb25-120" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`layout_in_circle`</span> <span class="pp">|</span> Redes densas o cíclicas <span class="pp">|</span></span>
+<span id="cb25-121"><a href="#cb25-121" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`layout_on_grid`</span> <span class="pp">|</span> Inspección individual, sin importar topología <span class="pp">|</span></span>
+<span id="cb25-122"><a href="#cb25-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-123"><a href="#cb25-123" aria-hidden="true" tabindex="-1"></a><span class="fu">## Grupos visuales (`mark.groups`)</span></span>
+<span id="cb25-124"><a href="#cb25-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-125"><a href="#cb25-125" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-126"><a href="#cb25-126" aria-hidden="true" tabindex="-1"></a>groupList <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">g1 =</span> <span class="fu">which</span>(isVowel), <span class="at">g2 =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>))</span>
+<span id="cb25-127"><a href="#cb25-127" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g, <span class="at">layout =</span> layout_with_fr,</span>
+<span id="cb25-128"><a href="#cb25-128" aria-hidden="true" tabindex="-1"></a>  <span class="at">mark.groups  =</span> groupList,</span>
+<span id="cb25-129"><a href="#cb25-129" aria-hidden="true" tabindex="-1"></a>  <span class="at">mark.col     =</span> <span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">0</span>,<span class="fl">0.3</span>,<span class="dv">1</span>,<span class="fl">0.5</span>), <span class="fu">rgb</span>(<span class="fl">0.8</span>,<span class="fl">0.4</span>,<span class="fl">0.1</span>,<span class="fl">0.5</span>)),</span>
+<span id="cb25-130"><a href="#cb25-130" aria-hidden="true" tabindex="-1"></a>  <span class="at">mark.border  =</span> <span class="cn">NA</span>)</span>
+<span id="cb25-131"><a href="#cb25-131" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-132"><a href="#cb25-132" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-133"><a href="#cb25-133" aria-hidden="true" tabindex="-1"></a><span class="fu">## Coloreado condicional de aristas (por facción)</span></span>
+<span id="cb25-134"><a href="#cb25-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-135"><a href="#cb25-135" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-136"><a href="#cb25-136" aria-hidden="true" tabindex="-1"></a>edge_nodes  <span class="ot">&lt;-</span> <span class="fu">as_edgelist</span>(g, <span class="at">names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb25-137"><a href="#cb25-137" aria-hidden="true" tabindex="-1"></a>edge_colors <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ecount</span>(g), <span class="cf">function</span>(i) {</span>
+<span id="cb25-138"><a href="#cb25-138" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">V</span>(g)<span class="sc">$</span>Faction[edge_nodes[i,<span class="dv">1</span>]] <span class="sc">==</span> <span class="fu">V</span>(g)<span class="sc">$</span>Faction[edge_nodes[i,<span class="dv">2</span>]])</span>
+<span id="cb25-139"><a href="#cb25-139" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="st">"skyblue"</span>)</span>
+<span id="cb25-140"><a href="#cb25-140" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="fu">return</span>(<span class="st">"gray80"</span>)</span>
+<span id="cb25-141"><a href="#cb25-141" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb25-142"><a href="#cb25-142" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(g, <span class="at">edge.color =</span> edge_colors)</span>
+<span id="cb25-143"><a href="#cb25-143" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-144"><a href="#cb25-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-145"><a href="#cb25-145" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-146"><a href="#cb25-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-147"><a href="#cb25-147" aria-hidden="true" tabindex="-1"></a><span class="fu"># 4. Paradigma Tidygraph</span></span>
+<span id="cb25-148"><a href="#cb25-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-149"><a href="#cb25-149" aria-hidden="true" tabindex="-1"></a><span class="fu">## Conversión y activación</span></span>
+<span id="cb25-150"><a href="#cb25-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-151"><a href="#cb25-151" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-152"><a href="#cb25-152" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidygraph)</span>
+<span id="cb25-153"><a href="#cb25-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-154"><a href="#cb25-154" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="ot">&lt;-</span> <span class="fu">as_tbl_graph</span>(karate)     <span class="co"># igraph → tbl_graph</span></span>
+<span id="cb25-155"><a href="#cb25-155" aria-hidden="true" tabindex="-1"></a><span class="fu">.active</span>(karate_tidy)                    <span class="co"># ver tabla activa ("nodes"/"edges")</span></span>
+<span id="cb25-156"><a href="#cb25-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-157"><a href="#cb25-157" aria-hidden="true" tabindex="-1"></a><span class="co"># Activar tabla de nodos o aristas</span></span>
+<span id="cb25-158"><a href="#cb25-158" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="sc">%&gt;%</span> <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span> ...</span>
+<span id="cb25-159"><a href="#cb25-159" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="sc">%&gt;%</span> <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span> ...</span>
+<span id="cb25-160"><a href="#cb25-160" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-161"><a href="#cb25-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-162"><a href="#cb25-162" aria-hidden="true" tabindex="-1"></a><span class="fu">## Verbos dplyr en red</span></span>
+<span id="cb25-163"><a href="#cb25-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-164"><a href="#cb25-164" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-165"><a href="#cb25-165" aria-hidden="true" tabindex="-1"></a>grafo <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb25-166"><a href="#cb25-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span></span>
+<span id="cb25-167"><a href="#cb25-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb25-168"><a href="#cb25-168" aria-hidden="true" tabindex="-1"></a>    <span class="at">grado     =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb25-169"><a href="#cb25-169" aria-hidden="true" tabindex="-1"></a>    <span class="at">comunidad =</span> <span class="fu">as.factor</span>(<span class="fu">group_infomap</span>()),</span>
+<span id="cb25-170"><a href="#cb25-170" aria-hidden="true" tabindex="-1"></a>    <span class="at">es_lider  =</span> grado <span class="sc">&gt;</span> <span class="dv">15</span></span>
+<span id="cb25-171"><a href="#cb25-171" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb25-172"><a href="#cb25-172" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">node_is_isolated</span>()) <span class="sc">%&gt;%</span>       <span class="co"># elimina nodos sin conexión</span></span>
+<span id="cb25-173"><a href="#cb25-173" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span></span>
+<span id="cb25-174"><a href="#cb25-174" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">puente =</span> <span class="fu">centrality_edge_betweenness</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb25-175"><a href="#cb25-175" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(puente <span class="sc">&gt;</span> <span class="dv">2</span>)</span>
+<span id="cb25-176"><a href="#cb25-176" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-177"><a href="#cb25-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-178"><a href="#cb25-178" aria-hidden="true" tabindex="-1"></a><span class="fu">## Pronombre `.N()` — cruzar nodos desde aristas</span></span>
+<span id="cb25-179"><a href="#cb25-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-180"><a href="#cb25-180" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-181"><a href="#cb25-181" aria-hidden="true" tabindex="-1"></a>karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb25-182"><a href="#cb25-182" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span></span>
+<span id="cb25-183"><a href="#cb25-183" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb25-184"><a href="#cb25-184" aria-hidden="true" tabindex="-1"></a>    <span class="at">fac_origen  =</span> <span class="fu">.N</span>()<span class="sc">$</span>Faction[from],   <span class="co"># atributo del nodo origen</span></span>
+<span id="cb25-185"><a href="#cb25-185" aria-hidden="true" tabindex="-1"></a>    <span class="at">fac_destino =</span> <span class="fu">.N</span>()<span class="sc">$</span>Faction[to],     <span class="co"># atributo del nodo destino</span></span>
+<span id="cb25-186"><a href="#cb25-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">es_cruce    =</span> fac_origen <span class="sc">!=</span> fac_destino</span>
+<span id="cb25-187"><a href="#cb25-187" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb25-188"><a href="#cb25-188" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-189"><a href="#cb25-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-190"><a href="#cb25-190" aria-hidden="true" tabindex="-1"></a><span class="fu">## Morphing — vistas temporales</span></span>
+<span id="cb25-191"><a href="#cb25-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-192"><a href="#cb25-192" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-193"><a href="#cb25-193" aria-hidden="true" tabindex="-1"></a><span class="co"># Patrón: morph → operar → unmorph</span></span>
+<span id="cb25-194"><a href="#cb25-194" aria-hidden="true" tabindex="-1"></a>grafo <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb25-195"><a href="#cb25-195" aria-hidden="true" tabindex="-1"></a>  <span class="fu">morph</span>(to_shortest_path, <span class="at">from =</span> <span class="dv">1</span>, <span class="at">to =</span> <span class="dv">34</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb25-196"><a href="#cb25-196" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">en_ruta =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb25-197"><a href="#cb25-197" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">en_ruta =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb25-198"><a href="#cb25-198" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unmorph</span>()</span>
+<span id="cb25-199"><a href="#cb25-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-200"><a href="#cb25-200" aria-hidden="true" tabindex="-1"></a><span class="co"># crystallise() → lista de tbl_graph independientes</span></span>
+<span id="cb25-201"><a href="#cb25-201" aria-hidden="true" tabindex="-1"></a>lista_comps <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span> <span class="fu">morph</span>(to_components) <span class="sc">%&gt;%</span> <span class="fu">crystallise</span>()</span>
+<span id="cb25-202"><a href="#cb25-202" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-203"><a href="#cb25-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-204"><a href="#cb25-204" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Morpher <span class="pp">|</span> Resultado <span class="pp">|</span></span>
+<span id="cb25-205"><a href="#cb25-205" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb25-206"><a href="#cb25-206" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`to_shortest_path(from, to)`</span> <span class="pp">|</span> Camino mínimo entre dos nodos <span class="pp">|</span></span>
+<span id="cb25-207"><a href="#cb25-207" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`to_local_neighborhood(node, order)`</span> <span class="pp">|</span> Ego-red de orden n <span class="pp">|</span></span>
+<span id="cb25-208"><a href="#cb25-208" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`to_contracted(atributo)`</span> <span class="pp">|</span> Colapsa grupos en súper-nodos <span class="pp">|</span></span>
+<span id="cb25-209"><a href="#cb25-209" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`to_components()`</span> <span class="pp">|</span> Subgrafos inconexos separados <span class="pp">|</span></span>
+<span id="cb25-210"><a href="#cb25-210" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`to_minimum_spanning_tree()`</span> <span class="pp">|</span> Esqueleto mínimo de conectividad <span class="pp">|</span></span>
+<span id="cb25-211"><a href="#cb25-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-212"><a href="#cb25-212" aria-hidden="true" tabindex="-1"></a><span class="fu">## Modificaciones estructurales</span></span>
+<span id="cb25-213"><a href="#cb25-213" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-214"><a href="#cb25-214" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-215"><a href="#cb25-215" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_nodes</span>(<span class="fu">data.frame</span>(<span class="at">name =</span> <span class="st">"Nuevo"</span>, <span class="at">Faction =</span> <span class="dv">1</span>))   <span class="co"># añadir nodo</span></span>
+<span id="cb25-216"><a href="#cb25-216" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_edges</span>(<span class="fu">data.frame</span>(<span class="at">from =</span> <span class="dv">35</span>, <span class="at">to =</span> <span class="dv">1</span>))             <span class="co"># añadir arista</span></span>
+<span id="cb25-217"><a href="#cb25-217" aria-hidden="true" tabindex="-1"></a><span class="fu">graph_join</span>(red_extra, <span class="at">by =</span> <span class="st">"name"</span>)                    <span class="co"># fusionar dos redes</span></span>
+<span id="cb25-218"><a href="#cb25-218" aria-hidden="true" tabindex="-1"></a><span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span> <span class="fu">slice</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">reroute</span>(<span class="at">from=</span><span class="dv">1</span>, <span class="at">to=</span><span class="dv">2</span>) <span class="co"># redirigir arista</span></span>
+<span id="cb25-219"><a href="#cb25-219" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-220"><a href="#cb25-220" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-221"><a href="#cb25-221" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-222"><a href="#cb25-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-223"><a href="#cb25-223" aria-hidden="true" tabindex="-1"></a><span class="fu"># 5. Visualización con `ggraph`</span></span>
+<span id="cb25-224"><a href="#cb25-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-225"><a href="#cb25-225" aria-hidden="true" tabindex="-1"></a><span class="fu">## Arquitectura de capas</span></span>
+<span id="cb25-226"><a href="#cb25-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-227"><a href="#cb25-227" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-228"><a href="#cb25-228" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggraph)</span>
+<span id="cb25-229"><a href="#cb25-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-230"><a href="#cb25-230" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(g_tidy, <span class="at">layout =</span> <span class="st">"fr"</span>) <span class="sc">+</span>          <span class="co"># "fr", "kk", "stress", "circle", "tree"</span></span>
+<span id="cb25-231"><a href="#cb25-231" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb25-232"><a href="#cb25-232" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb25-233"><a href="#cb25-233" aria-hidden="true" tabindex="-1"></a>                      <span class="at">color =</span> <span class="fu">factor</span>(<span class="fu">group_louvain</span>()))) <span class="sc">+</span></span>
+<span id="cb25-234"><a href="#cb25-234" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_viridis_d</span>(<span class="at">option =</span> <span class="st">"plasma"</span>) <span class="sc">+</span></span>
+<span id="cb25-235"><a href="#cb25-235" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span></span>
+<span id="cb25-236"><a href="#cb25-236" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Mi red"</span>)</span>
+<span id="cb25-237"><a href="#cb25-237" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-238"><a href="#cb25-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-239"><a href="#cb25-239" aria-hidden="true" tabindex="-1"></a><span class="fu">## Geoms de aristas más usados</span></span>
+<span id="cb25-240"><a href="#cb25-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-241"><a href="#cb25-241" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Geom <span class="pp">|</span> Cuándo usarlo <span class="pp">|</span></span>
+<span id="cb25-242"><a href="#cb25-242" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb25-243"><a href="#cb25-243" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`geom_edge_link()`</span> <span class="pp">|</span> Caso general — línea recta <span class="pp">|</span></span>
+<span id="cb25-244"><a href="#cb25-244" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`geom_edge_fan()`</span> <span class="pp">|</span> Múltiples aristas entre mismos nodos (multígrafo) <span class="pp">|</span></span>
+<span id="cb25-245"><a href="#cb25-245" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`geom_edge_parallel()`</span> <span class="pp">|</span> Red multicapa — desplaza aristas por tipo <span class="pp">|</span></span>
+<span id="cb25-246"><a href="#cb25-246" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`geom_edge_diagonal()`</span> <span class="pp">|</span> Estructuras jerárquicas / árboles <span class="pp">|</span></span>
+<span id="cb25-247"><a href="#cb25-247" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`geom_edge_arc()`</span> <span class="pp">|</span> Layout circular — aristas curvadas <span class="pp">|</span></span>
+<span id="cb25-248"><a href="#cb25-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-249"><a href="#cb25-249" aria-hidden="true" tabindex="-1"></a><span class="fu">## Geoms de nodos</span></span>
+<span id="cb25-250"><a href="#cb25-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-251"><a href="#cb25-251" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-252"><a href="#cb25-252" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="fu">centrality_degree</span>(), <span class="at">color =</span> comunidad))</span>
+<span id="cb25-253"><a href="#cb25-253" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> name), <span class="at">check_overlap =</span> <span class="cn">TRUE</span>, <span class="at">vjust =</span> <span class="fl">1.5</span>)</span>
+<span id="cb25-254"><a href="#cb25-254" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_label</span>(<span class="fu">aes</span>(<span class="at">label =</span> name))</span>
+<span id="cb25-255"><a href="#cb25-255" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-256"><a href="#cb25-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-257"><a href="#cb25-257" aria-hidden="true" tabindex="-1"></a><span class="fu">## NSE — calcular métricas directamente en `aes()`</span></span>
+<span id="cb25-258"><a href="#cb25-258" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-259"><a href="#cb25-259" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-260"><a href="#cb25-260" aria-hidden="true" tabindex="-1"></a><span class="co"># Sin necesidad de mutate previo</span></span>
+<span id="cb25-261"><a href="#cb25-261" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_node_point</span>(<span class="fu">aes</span>(</span>
+<span id="cb25-262"><a href="#cb25-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">size  =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb25-263"><a href="#cb25-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">color =</span> <span class="fu">as.factor</span>(<span class="fu">group_infomap</span>())</span>
+<span id="cb25-264"><a href="#cb25-264" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb25-265"><a href="#cb25-265" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_edge_link</span>(<span class="fu">aes</span>(<span class="at">alpha =</span> <span class="fu">centrality_edge_betweenness</span>()))</span>
+<span id="cb25-266"><a href="#cb25-266" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-267"><a href="#cb25-267" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-268"><a href="#cb25-268" aria-hidden="true" tabindex="-1"></a><span class="fu">## Envolventes de comunidades con `ggforce`</span></span>
+<span id="cb25-269"><a href="#cb25-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-270"><a href="#cb25-270" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-271"><a href="#cb25-271" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggforce)</span>
+<span id="cb25-272"><a href="#cb25-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-273"><a href="#cb25-273" aria-hidden="true" tabindex="-1"></a>g_tidy <span class="ot">&lt;-</span> <span class="fu">as_tbl_graph</span>(karate) <span class="sc">%&gt;%</span></span>
+<span id="cb25-274"><a href="#cb25-274" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">as.factor</span>(<span class="fu">group_louvain</span>()))</span>
+<span id="cb25-275"><a href="#cb25-275" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-276"><a href="#cb25-276" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(g_tidy, <span class="at">layout =</span> <span class="st">"nicely"</span>) <span class="sc">+</span></span>
+<span id="cb25-277"><a href="#cb25-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_mark_hull</span>(<span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">fill =</span> comunidad, <span class="at">group =</span> comunidad),</span>
+<span id="cb25-278"><a href="#cb25-278" aria-hidden="true" tabindex="-1"></a>    <span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">color =</span> <span class="cn">NA</span>, <span class="at">concavity =</span> <span class="dv">10</span>, <span class="at">expand =</span> <span class="fu">unit</span>(<span class="dv">2</span>, <span class="st">"mm"</span>)) <span class="sc">+</span></span>
+<span id="cb25-279"><a href="#cb25-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">color =</span> <span class="st">"gray70"</span>) <span class="sc">+</span></span>
+<span id="cb25-280"><a href="#cb25-280" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> comunidad), <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb25-281"><a href="#cb25-281" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb25-282"><a href="#cb25-282" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb25-283"><a href="#cb25-283" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span>
+<span id="cb25-284"><a href="#cb25-284" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-285"><a href="#cb25-285" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-286"><a href="#cb25-286" aria-hidden="true" tabindex="-1"></a><span class="fu">## Gradiente de dirección en grafos dirigidos</span></span>
+<span id="cb25-287"><a href="#cb25-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-288"><a href="#cb25-288" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-289"><a href="#cb25-289" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_edge_fan</span>(<span class="fu">aes</span>(<span class="at">alpha =</span> <span class="fu">after_stat</span>(index)), <span class="at">color =</span> <span class="st">"darkred"</span>,</span>
+<span id="cb25-290"><a href="#cb25-290" aria-hidden="true" tabindex="-1"></a>              <span class="at">show.legend =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb25-291"><a href="#cb25-291" aria-hidden="true" tabindex="-1"></a><span class="co"># El alpha aumenta desde origen → destino, indicando dirección</span></span>
+<span id="cb25-292"><a href="#cb25-292" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-293"><a href="#cb25-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-294"><a href="#cb25-294" aria-hidden="true" tabindex="-1"></a><span class="fu">## Facetas</span></span>
+<span id="cb25-295"><a href="#cb25-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-296"><a href="#cb25-296" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-297"><a href="#cb25-297" aria-hidden="true" tabindex="-1"></a>g_tidy <span class="sc">%&gt;%</span> <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span></span>
+<span id="cb25-298"><a href="#cb25-298" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Sede =</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"Norte"</span>,<span class="st">"Sur"</span>), <span class="fu">n</span>(), <span class="at">replace =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-299"><a href="#cb25-299" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggraph</span>(<span class="st">"stress"</span>) <span class="sc">+</span></span>
+<span id="cb25-300"><a href="#cb25-300" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb25-301"><a href="#cb25-301" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="at">color =</span> <span class="st">"orange"</span>, <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb25-302"><a href="#cb25-302" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_nodes</span>(<span class="sc">~</span> Sede) <span class="sc">+</span> <span class="fu">theme_graph</span>()</span>
+<span id="cb25-303"><a href="#cb25-303" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-304"><a href="#cb25-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-305"><a href="#cb25-305" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-306"><a href="#cb25-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-307"><a href="#cb25-307" aria-hidden="true" tabindex="-1"></a><span class="fu"># 6. Métricas de Centralidad</span></span>
+<span id="cb25-308"><a href="#cb25-308" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-309"><a href="#cb25-309" aria-hidden="true" tabindex="-1"></a><span class="fu">## Con `igraph` (funciones base)</span></span>
+<span id="cb25-310"><a href="#cb25-310" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-311"><a href="#cb25-311" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-312"><a href="#cb25-312" aria-hidden="true" tabindex="-1"></a><span class="fu">degree</span>(g)                          <span class="co"># grado total</span></span>
+<span id="cb25-313"><a href="#cb25-313" aria-hidden="true" tabindex="-1"></a><span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"in"</span>)             <span class="co"># grado de entrada (dirigido)</span></span>
+<span id="cb25-314"><a href="#cb25-314" aria-hidden="true" tabindex="-1"></a><span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>)            <span class="co"># grado de salida (dirigido)</span></span>
+<span id="cb25-315"><a href="#cb25-315" aria-hidden="true" tabindex="-1"></a><span class="fu">betweenness</span>(g)                     <span class="co"># intermediación</span></span>
+<span id="cb25-316"><a href="#cb25-316" aria-hidden="true" tabindex="-1"></a><span class="fu">closeness</span>(g)                       <span class="co"># cercanía (¡cuidado en dirigidos!)</span></span>
+<span id="cb25-317"><a href="#cb25-317" aria-hidden="true" tabindex="-1"></a><span class="fu">harmonic_centrality</span>(g)             <span class="co"># cercanía armónica (robusta)</span></span>
+<span id="cb25-318"><a href="#cb25-318" aria-hidden="true" tabindex="-1"></a><span class="fu">eigen_centrality</span>(g)<span class="sc">$</span>vector         <span class="co"># eigenvector (influencia por vecinos)</span></span>
+<span id="cb25-319"><a href="#cb25-319" aria-hidden="true" tabindex="-1"></a><span class="fu">hub_score</span>(g)<span class="sc">$</span>vector                <span class="co"># HITS: hubs</span></span>
+<span id="cb25-320"><a href="#cb25-320" aria-hidden="true" tabindex="-1"></a><span class="fu">authority_score</span>(g)<span class="sc">$</span>vector          <span class="co"># HITS: authorities</span></span>
+<span id="cb25-321"><a href="#cb25-321" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-322"><a href="#cb25-322" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-323"><a href="#cb25-323" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Closeness en dirigidos:** usar </span><span class="in">`harmonic_centrality()`</span><span class="at"> — penaliza correctamente nodos aislados (evita el "efecto isla").</span></span>
+<span id="cb25-324"><a href="#cb25-324" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-325"><a href="#cb25-325" aria-hidden="true" tabindex="-1"></a><span class="fu">## Con `tidygraph` (dentro de `mutate`)</span></span>
+<span id="cb25-326"><a href="#cb25-326" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-327"><a href="#cb25-327" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-328"><a href="#cb25-328" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(</span>
+<span id="cb25-329"><a href="#cb25-329" aria-hidden="true" tabindex="-1"></a>  <span class="at">degree       =</span> <span class="fu">centrality_degree</span>(),</span>
+<span id="cb25-330"><a href="#cb25-330" aria-hidden="true" tabindex="-1"></a>  <span class="at">betweenness  =</span> <span class="fu">centrality_betweenness</span>(),</span>
+<span id="cb25-331"><a href="#cb25-331" aria-hidden="true" tabindex="-1"></a>  <span class="at">closeness    =</span> <span class="fu">centrality_closeness</span>(),</span>
+<span id="cb25-332"><a href="#cb25-332" aria-hidden="true" tabindex="-1"></a>  <span class="at">pagerank     =</span> <span class="fu">centrality_pagerank</span>(),</span>
+<span id="cb25-333"><a href="#cb25-333" aria-hidden="true" tabindex="-1"></a>  <span class="at">eigen        =</span> <span class="fu">centrality_eigen</span>(),</span>
+<span id="cb25-334"><a href="#cb25-334" aria-hidden="true" tabindex="-1"></a>  <span class="at">edge_btw     =</span> <span class="fu">centrality_edge_betweenness</span>()  <span class="co"># sobre aristas</span></span>
+<span id="cb25-335"><a href="#cb25-335" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb25-336"><a href="#cb25-336" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-337"><a href="#cb25-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-338"><a href="#cb25-338" aria-hidden="true" tabindex="-1"></a><span class="fu">## Cuándo usar cada métrica</span></span>
+<span id="cb25-339"><a href="#cb25-339" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-340"><a href="#cb25-340" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Métrica <span class="pp">|</span> Objetivo <span class="pp">|</span> Ejemplo de uso <span class="pp">|</span></span>
+<span id="cb25-341"><a href="#cb25-341" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb25-342"><a href="#cb25-342" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Degree** <span class="pp">|</span> Popularidad, actividad local <span class="pp">|</span> Influencers, nodos con alta carga <span class="pp">|</span></span>
+<span id="cb25-343"><a href="#cb25-343" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Betweenness** <span class="pp">|</span> Control de flujo, SPOF <span class="pp">|</span> Puntos únicos de fallo, gatekeepers <span class="pp">|</span></span>
+<span id="cb25-344"><a href="#cb25-344" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Closeness** <span class="pp">|</span> Rapidez de difusión <span class="pp">|</span> Dónde poner caché, vacunación <span class="pp">|</span></span>
+<span id="cb25-345"><a href="#cb25-345" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **PageRank / Eigenvector** <span class="pp">|</span> Prestigio por calidad de vecinos <span class="pp">|</span> Líderes de opinión <span class="pp">|</span></span>
+<span id="cb25-346"><a href="#cb25-346" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **HITS Hubs** <span class="pp">|</span> Nodos que apuntan a buenas autoridades <span class="pp">|</span> Medios/agregadores <span class="pp">|</span></span>
+<span id="cb25-347"><a href="#cb25-347" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **HITS Authorities** <span class="pp">|</span> Nodos muy referenciados por buenos hubs <span class="pp">|</span> Productores de contenido <span class="pp">|</span></span>
+<span id="cb25-348"><a href="#cb25-348" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-349"><a href="#cb25-349" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-350"><a href="#cb25-350" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-351"><a href="#cb25-351" aria-hidden="true" tabindex="-1"></a><span class="fu"># 7. Análisis Estructural Global</span></span>
+<span id="cb25-352"><a href="#cb25-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-353"><a href="#cb25-353" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-354"><a href="#cb25-354" aria-hidden="true" tabindex="-1"></a><span class="fu">diameter</span>(g)                                    <span class="co"># camino más corto más largo</span></span>
+<span id="cb25-355"><a href="#cb25-355" aria-hidden="true" tabindex="-1"></a><span class="fu">shortest_paths</span>(g, <span class="at">from =</span> <span class="st">"1"</span>, <span class="at">to =</span> <span class="st">"10"</span>)<span class="sc">$</span>vpath <span class="co"># ruta mínima</span></span>
+<span id="cb25-356"><a href="#cb25-356" aria-hidden="true" tabindex="-1"></a><span class="fu">edge_betweenness</span>(g)                            <span class="co"># betweenness de aristas</span></span>
+<span id="cb25-357"><a href="#cb25-357" aria-hidden="true" tabindex="-1"></a><span class="fu">edge_density</span>(g)                                <span class="co"># densidad (aristas / posibles)</span></span>
+<span id="cb25-358"><a href="#cb25-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-359"><a href="#cb25-359" aria-hidden="true" tabindex="-1"></a><span class="co"># Clustering (transitividad)</span></span>
+<span id="cb25-360"><a href="#cb25-360" aria-hidden="true" tabindex="-1"></a><span class="fu">transitivity</span>(g, <span class="at">type =</span> <span class="st">"global"</span>)               <span class="co"># C global</span></span>
+<span id="cb25-361"><a href="#cb25-361" aria-hidden="true" tabindex="-1"></a><span class="fu">transitivity</span>(g, <span class="at">type =</span> <span class="st">"local"</span>)                <span class="co"># C por nodo</span></span>
+<span id="cb25-362"><a href="#cb25-362" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-363"><a href="#cb25-363" aria-hidden="true" tabindex="-1"></a><span class="co"># nodos con C≈0 son brokers (agujeros estructurales)</span></span>
+<span id="cb25-364"><a href="#cb25-364" aria-hidden="true" tabindex="-1"></a>brokers <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">transitivity</span>(g, <span class="at">type =</span> <span class="st">"local"</span>) <span class="sc">&lt;</span> <span class="fl">0.1</span>)</span>
+<span id="cb25-365"><a href="#cb25-365" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-366"><a href="#cb25-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-367"><a href="#cb25-367" aria-hidden="true" tabindex="-1"></a>**Interpretación del clustering local:**</span>
+<span id="cb25-368"><a href="#cb25-368" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-369"><a href="#cb25-369" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`C = 1`</span> → clique perfecta (todos mis vecinos se conocen entre sí)  </span>
+<span id="cb25-370"><a href="#cb25-370" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`C ≈ 0`</span> → agujero estructural (el nodo es el único puente entre grupos)</span>
+<span id="cb25-371"><a href="#cb25-371" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-372"><a href="#cb25-372" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-373"><a href="#cb25-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-374"><a href="#cb25-374" aria-hidden="true" tabindex="-1"></a><span class="fu"># 8. Detección de Comunidades</span></span>
+<span id="cb25-375"><a href="#cb25-375" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-376"><a href="#cb25-376" aria-hidden="true" tabindex="-1"></a><span class="fu">## Algoritmos disponibles</span></span>
+<span id="cb25-377"><a href="#cb25-377" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-378"><a href="#cb25-378" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-379"><a href="#cb25-379" aria-hidden="true" tabindex="-1"></a><span class="co"># igraph base</span></span>
+<span id="cb25-380"><a href="#cb25-380" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_edge_betweenness</span>(g)    <span class="co"># elimina puentes progresivamente</span></span>
+<span id="cb25-381"><a href="#cb25-381" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_walktrap</span>(g)            <span class="co"># random walks (caminante atrapado)</span></span>
+<span id="cb25-382"><a href="#cb25-382" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_fast_greedy</span>(g)         <span class="co"># bottom-up, optimiza modularidad</span></span>
+<span id="cb25-383"><a href="#cb25-383" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_leading_eigen</span>(g)       <span class="co"># top-down, vectores propios</span></span>
+<span id="cb25-384"><a href="#cb25-384" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_label_prop</span>(g)          <span class="co"># propagación de etiquetas (muy rápido)</span></span>
+<span id="cb25-385"><a href="#cb25-385" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster_louvain</span>(g)             <span class="co"># Louvain — escalable, gran escala ✓</span></span>
+<span id="cb25-386"><a href="#cb25-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-387"><a href="#cb25-387" aria-hidden="true" tabindex="-1"></a><span class="co"># tidygraph (dentro de mutate)</span></span>
+<span id="cb25-388"><a href="#cb25-388" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_louvain</span>())</span>
+<span id="cb25-389"><a href="#cb25-389" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_infomap</span>())</span>
+<span id="cb25-390"><a href="#cb25-390" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_edge_betweenness</span>())</span>
+<span id="cb25-391"><a href="#cb25-391" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_walktrap</span>())</span>
+<span id="cb25-392"><a href="#cb25-392" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">comunidad =</span> <span class="fu">group_label_prop</span>())</span>
+<span id="cb25-393"><a href="#cb25-393" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-394"><a href="#cb25-394" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-395"><a href="#cb25-395" aria-hidden="true" tabindex="-1"></a><span class="fu">## Cuándo usar cada algoritmo</span></span>
+<span id="cb25-396"><a href="#cb25-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-397"><a href="#cb25-397" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Algoritmo <span class="pp">|</span> Escala <span class="pp">|</span> Criterio de elección <span class="pp">|</span></span>
+<span id="cb25-398"><a href="#cb25-398" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb25-399"><a href="#cb25-399" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Louvain** <span class="pp">|</span> Grande <span class="pp">|</span> Velocidad + calidad general <span class="pp">|</span></span>
+<span id="cb25-400"><a href="#cb25-400" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Infomap** <span class="pp">|</span> Mediana <span class="pp">|</span> Flujos de información (teoría de la información) <span class="pp">|</span></span>
+<span id="cb25-401"><a href="#cb25-401" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Edge Betweenness** <span class="pp">|</span> Pequeña <span class="pp">|</span> Interpretabilidad, puentes explícitos <span class="pp">|</span></span>
+<span id="cb25-402"><a href="#cb25-402" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> **Label Propagation** <span class="pp">|</span> Muy grande <span class="pp">|</span> Máxima velocidad, grafos masivos <span class="pp">|</span></span>
+<span id="cb25-403"><a href="#cb25-403" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-404"><a href="#cb25-404" aria-hidden="true" tabindex="-1"></a><span class="fu">## Visualización rápida de comunidades</span></span>
+<span id="cb25-405"><a href="#cb25-405" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-406"><a href="#cb25-406" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-407"><a href="#cb25-407" aria-hidden="true" tabindex="-1"></a>comm <span class="ot">&lt;-</span> <span class="fu">cluster_louvain</span>(g)</span>
+<span id="cb25-408"><a href="#cb25-408" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(comm, g, <span class="at">main =</span> <span class="st">"Comunidades"</span>)   <span class="co"># igraph base con colores automáticos</span></span>
+<span id="cb25-409"><a href="#cb25-409" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-410"><a href="#cb25-410" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-411"><a href="#cb25-411" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-412"><a href="#cb25-412" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-413"><a href="#cb25-413" aria-hidden="true" tabindex="-1"></a><span class="fu"># 9. Redes Egocéntricas</span></span>
+<span id="cb25-414"><a href="#cb25-414" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-415"><a href="#cb25-415" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-416"><a href="#cb25-416" aria-hidden="true" tabindex="-1"></a><span class="co"># Ego-red de orden 1 (yo + mis contactos directos)</span></span>
+<span id="cb25-417"><a href="#cb25-417" aria-hidden="true" tabindex="-1"></a><span class="fu">ego</span>(g, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">nodes =</span> <span class="dv">1</span>)</span>
+<span id="cb25-418"><a href="#cb25-418" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-419"><a href="#cb25-419" aria-hidden="true" tabindex="-1"></a><span class="co"># Con tidygraph/morphing</span></span>
+<span id="cb25-420"><a href="#cb25-420" aria-hidden="true" tabindex="-1"></a>grafo_ego <span class="ot">&lt;-</span> karate_tidy <span class="sc">%&gt;%</span></span>
+<span id="cb25-421"><a href="#cb25-421" aria-hidden="true" tabindex="-1"></a>  <span class="fu">morph</span>(to_local_neighborhood, <span class="at">node =</span> <span class="dv">1</span>, <span class="at">order =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb25-422"><a href="#cb25-422" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">es_vecino =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb25-423"><a href="#cb25-423" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unmorph</span>()</span>
+<span id="cb25-424"><a href="#cb25-424" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-425"><a href="#cb25-425" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-426"><a href="#cb25-426" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-427"><a href="#cb25-427" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-428"><a href="#cb25-428" aria-hidden="true" tabindex="-1"></a><span class="fu"># 10. Exportación</span></span>
+<span id="cb25-429"><a href="#cb25-429" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-430"><a href="#cb25-430" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb25-431"><a href="#cb25-431" aria-hidden="true" tabindex="-1"></a><span class="fu">write_graph</span>(g, <span class="st">"red.graphml"</span>, <span class="at">format =</span> <span class="st">"graphml"</span>)   <span class="co"># formato XML estándar</span></span>
+<span id="cb25-432"><a href="#cb25-432" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb25-433"><a href="#cb25-433" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-434"><a href="#cb25-434" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb25-435"><a href="#cb25-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-436"><a href="#cb25-436" aria-hidden="true" tabindex="-1"></a><span class="fu"># Referencia rápida de operadores `igraph`</span></span>
+<span id="cb25-437"><a href="#cb25-437" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-438"><a href="#cb25-438" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Operador <span class="pp">|</span> Función <span class="pp">|</span></span>
+<span id="cb25-439"><a href="#cb25-439" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb25-440"><a href="#cb25-440" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`V(g)`</span> <span class="pp">|</span> Secuencia de vértices <span class="pp">|</span></span>
+<span id="cb25-441"><a href="#cb25-441" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`E(g)`</span> <span class="pp">|</span> Secuencia de aristas <span class="pp">|</span></span>
+<span id="cb25-442"><a href="#cb25-442" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`V(g)[cond]`</span> <span class="pp">|</span> Filtrar vértices por condición <span class="pp">|</span></span>
+<span id="cb25-443"><a href="#cb25-443" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`E(g)[A %--% B]`</span> <span class="pp">|</span> Aristas entre A y B (sin dir.) <span class="pp">|</span></span>
+<span id="cb25-444"><a href="#cb25-444" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`E(g)[A %-&gt;% B]`</span> <span class="pp">|</span> Aristas de A hacia B <span class="pp">|</span></span>
+<span id="cb25-445"><a href="#cb25-445" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`E(g)[A %&lt;-% B]`</span> <span class="pp">|</span> Aristas de B hacia A <span class="pp">|</span></span>
+<span id="cb25-446"><a href="#cb25-446" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`as_edgelist(g)`</span> <span class="pp">|</span> Matriz (from, to) de aristas <span class="pp">|</span></span>
+<span id="cb25-447"><a href="#cb25-447" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`which_mutual(g)`</span> <span class="pp">|</span> Vector lógico de aristas mutuas <span class="pp">|</span></span>
+<span id="cb25-448"><a href="#cb25-448" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`node_is_isolated()`</span> <span class="pp">|</span> Nodos sin ninguna conexión (tidygraph) <span class="pp">|</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

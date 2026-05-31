@@ -1,0 +1,451 @@
+---
+title: "Cheat Sheet: SNA con igraph & tidygraph"
+subtitle: "Referencia rápida para examen — Temas 7, 8 y 9"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    theme: cosmo
+    code-fold: false
+    fontsize: 0.85em
+  pdf:
+    toc: true
+    theme: cosmo
+
+execute:
+  eval: false
+---
+
+# 1. Construcción de Grafos (`igraph`)
+
+## Desde distintos formatos
+
+```r
+library(igraph)
+
+# 1. Lista de aristas (pares de nodos)
+make_graph(edges = c(1,2, 2,3, 3,1))          # por índices
+make_graph(~ A-B-C-A)                          # por fórmula
+make_graph("Zachary")                          # grafo famoso
+
+# 2. Construcción secuencial (vacío + añadir)
+g <- make_empty_graph(n = 0, directed = TRUE) +
+  vertices(c("A","B","C")) +
+  edges(c("A","C", "B","C"))
+g <- g - V(g)["A"]                             # eliminar nodo
+
+# 3. Desde data frame (más habitual en datos reales)
+df <- data.frame(from = c("A","B"), to = c("B","C"), weight = c(1,2))
+g <- graph_from_data_frame(df, directed = FALSE)
+
+# 4. Desde matriz de adyacencia
+A <- matrix(c(0,1,1, 1,0,0, 1,0,0), nrow=3, byrow=TRUE)
+g <- graph.adjacency(A, mode = "undirected")   # → grafo
+A <- as_adjacency_matrix(g, sparse = FALSE)    # grafo → matriz
+
+# 5. Grafos aleatorios / sintéticos
+g_er  <- sample_gnp(10, 0.3, directed = FALSE) # Erdős-Rényi
+g_ba  <- sample_pa(100, power = 1.2, m = 2)    # Barabási-Albert
+make_tree(20, children = 3)
+make_full_graph(6)                              # clique
+make_star(10)
+make_lattice(dimvector = c(5,5))
+```
+
+## Info básica del grafo
+
+```r
+vcount(g)        # nº nodos
+ecount(g)        # nº aristas
+is.directed(g)   # TRUE/FALSE
+is_simple(g)     # sin bucles ni aristas múltiples
+```
+
+---
+
+# 2. Atributos de Nodos y Aristas
+
+```r
+# Leer / asignar atributos
+V(g)$name   <- paste0("N", 1:vcount(g))     # nombre
+V(g)$color  <- "lightblue"
+V(g)$size   <- 15
+V(g)$shape  <- "circle"                     # "circle", "rectangle"
+
+E(g)$weight <- sample(1:5, ecount(g), replace = TRUE)
+E(g)$width  <- E(g)$weight * 0.5
+E(g)$color  <- "gray80"
+E(g)$curved <- 0.2
+
+# Asignación condicional
+V(g)[c(1,34)]$color <- "orange"
+isVowel <- V(g)$name %in% c("A","E","I","O","U")
+V(g)[isVowel]$shape <- "square"
+
+# Selección de aristas
+E(g)[v1 %--% v1]$width <- 4       # bidireccional (ambas dir.)
+E(g)[v1 %->% v2]$color <- "red"   # solo A→B
+E(g)[v1 %-<% v2]                  # solo B→A
+which_mutual(g)                    # vector lógico aristas mutuas
+```
+
+---
+
+# 3. Visualización con `igraph` (`plot`)
+
+## Estructura básica
+
+```r
+plot(g,
+  layout        = layout_with_fr(g),   # algoritmo de disposición
+  vertex.size   = 15,
+  vertex.color  = V(g)$color,
+  vertex.shape  = "circle",
+  vertex.label  = V(g)$name,
+  vertex.label.cex   = 0.8,
+  vertex.label.color = "black",
+  vertex.label.dist  = 1.2,            # aleja la etiqueta del centro
+  vertex.frame.color = "white",
+  edge.color    = E(g)$color,
+  edge.width    = E(g)$width,
+  edge.curved   = 0.2,
+  edge.arrow.size = 0.5,               # solo grafos dirigidos
+  main = "Título")
+```
+
+## Layouts disponibles
+
+| Función | Cuándo usarla |
+|---|---|
+| `layout_with_fr` | Estándar — revela clusters (Fruchterman-Reingold) |
+| `layout_with_kk` | Distancias proporcionales a caminos cortos (Kamada-Kawai) |
+| `layout_in_circle` | Redes densas o cíclicas |
+| `layout_on_grid` | Inspección individual, sin importar topología |
+
+## Grupos visuales (`mark.groups`)
+
+```r
+groupList <- list(g1 = which(isVowel), g2 = c(2,3,4))
+plot(g, layout = layout_with_fr,
+  mark.groups  = groupList,
+  mark.col     = c(rgb(0,0.3,1,0.5), rgb(0.8,0.4,0.1,0.5)),
+  mark.border  = NA)
+```
+
+## Coloreado condicional de aristas (por facción)
+
+```r
+edge_nodes  <- as_edgelist(g, names = FALSE)
+edge_colors <- sapply(1:ecount(g), function(i) {
+  if (V(g)$Faction[edge_nodes[i,1]] == V(g)$Faction[edge_nodes[i,2]])
+    return("skyblue")
+  else return("gray80")
+})
+plot(g, edge.color = edge_colors)
+```
+
+---
+
+# 4. Paradigma Tidygraph
+
+## Conversión y activación
+
+```r
+library(tidygraph)
+
+karate_tidy <- as_tbl_graph(karate)     # igraph → tbl_graph
+.active(karate_tidy)                    # ver tabla activa ("nodes"/"edges")
+
+# Activar tabla de nodos o aristas
+karate_tidy %>% activate(nodes) %>% ...
+karate_tidy %>% activate(edges) %>% ...
+```
+
+## Verbos dplyr en red
+
+```r
+grafo <- karate_tidy %>%
+  activate(nodes) %>%
+  mutate(
+    grado     = centrality_degree(),
+    comunidad = as.factor(group_infomap()),
+    es_lider  = grado > 15
+  ) %>%
+  filter(!node_is_isolated()) %>%       # elimina nodos sin conexión
+  activate(edges) %>%
+  mutate(puente = centrality_edge_betweenness()) %>%
+  filter(puente > 2)
+```
+
+## Pronombre `.N()` — cruzar nodos desde aristas
+
+```r
+karate_tidy %>%
+  activate(edges) %>%
+  mutate(
+    fac_origen  = .N()$Faction[from],   # atributo del nodo origen
+    fac_destino = .N()$Faction[to],     # atributo del nodo destino
+    es_cruce    = fac_origen != fac_destino
+  )
+```
+
+## Morphing — vistas temporales
+
+```r
+# Patrón: morph → operar → unmorph
+grafo <- karate_tidy %>%
+  morph(to_shortest_path, from = 1, to = 34) %>%
+  activate(nodes) %>% mutate(en_ruta = TRUE) %>%
+  activate(edges) %>% mutate(en_ruta = TRUE) %>%
+  unmorph()
+
+# crystallise() → lista de tbl_graph independientes
+lista_comps <- karate_tidy %>% morph(to_components) %>% crystallise()
+```
+
+| Morpher | Resultado |
+|---|---|
+| `to_shortest_path(from, to)` | Camino mínimo entre dos nodos |
+| `to_local_neighborhood(node, order)` | Ego-red de orden n |
+| `to_contracted(atributo)` | Colapsa grupos en súper-nodos |
+| `to_components()` | Subgrafos inconexos separados |
+| `to_minimum_spanning_tree()` | Esqueleto mínimo de conectividad |
+
+## Modificaciones estructurales
+
+```r
+bind_nodes(data.frame(name = "Nuevo", Faction = 1))   # añadir nodo
+bind_edges(data.frame(from = 35, to = 1))             # añadir arista
+graph_join(red_extra, by = "name")                    # fusionar dos redes
+activate(edges) %>% slice(1) %>% reroute(from=1, to=2) # redirigir arista
+```
+
+---
+
+# 5. Visualización con `ggraph`
+
+## Arquitectura de capas
+
+```r
+library(ggraph)
+
+ggraph(g_tidy, layout = "fr") +          # "fr", "kk", "stress", "circle", "tree"
+  geom_edge_link(alpha = 0.3) +
+  geom_node_point(aes(size = centrality_degree(),
+                      color = factor(group_louvain()))) +
+  scale_color_viridis_d(option = "plasma") +
+  theme_graph() +
+  labs(title = "Mi red")
+```
+
+## Geoms de aristas más usados
+
+| Geom | Cuándo usarlo |
+|---|---|
+| `geom_edge_link()` | Caso general — línea recta |
+| `geom_edge_fan()` | Múltiples aristas entre mismos nodos (multígrafo) |
+| `geom_edge_parallel()` | Red multicapa — desplaza aristas por tipo |
+| `geom_edge_diagonal()` | Estructuras jerárquicas / árboles |
+| `geom_edge_arc()` | Layout circular — aristas curvadas |
+
+## Geoms de nodos
+
+```r
+geom_node_point(aes(size = centrality_degree(), color = comunidad))
+geom_node_text(aes(label = name), check_overlap = TRUE, vjust = 1.5)
+geom_node_label(aes(label = name))
+```
+
+## NSE — calcular métricas directamente en `aes()`
+
+```r
+# Sin necesidad de mutate previo
+geom_node_point(aes(
+  size  = centrality_degree(),
+  color = as.factor(group_infomap())
+))
+geom_edge_link(aes(alpha = centrality_edge_betweenness()))
+```
+
+## Envolventes de comunidades con `ggforce`
+
+```r
+library(ggforce)
+
+g_tidy <- as_tbl_graph(karate) %>%
+  mutate(comunidad = as.factor(group_louvain()))
+
+ggraph(g_tidy, layout = "nicely") +
+  geom_mark_hull(aes(x = x, y = y, fill = comunidad, group = comunidad),
+    alpha = 0.15, color = NA, concavity = 10, expand = unit(2, "mm")) +
+  geom_edge_link(alpha = 0.2, color = "gray70") +
+  geom_node_point(aes(color = comunidad), size = 4) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  theme_graph() + theme(legend.position = "none")
+```
+
+## Gradiente de dirección en grafos dirigidos
+
+```r
+geom_edge_fan(aes(alpha = after_stat(index)), color = "darkred",
+              show.legend = FALSE)
+# El alpha aumenta desde origen → destino, indicando dirección
+```
+
+## Facetas
+
+```r
+g_tidy %>% activate(nodes) %>%
+  mutate(Sede = sample(c("Norte","Sur"), n(), replace = TRUE)) %>%
+  ggraph("stress") +
+  geom_edge_link(alpha = 0.4) +
+  geom_node_point(color = "orange", size = 4) +
+  facet_nodes(~ Sede) + theme_graph()
+```
+
+---
+
+# 6. Métricas de Centralidad
+
+## Con `igraph` (funciones base)
+
+```r
+degree(g)                          # grado total
+degree(g, mode = "in")             # grado de entrada (dirigido)
+degree(g, mode = "out")            # grado de salida (dirigido)
+betweenness(g)                     # intermediación
+closeness(g)                       # cercanía (¡cuidado en dirigidos!)
+harmonic_centrality(g)             # cercanía armónica (robusta)
+eigen_centrality(g)$vector         # eigenvector (influencia por vecinos)
+hub_score(g)$vector                # HITS: hubs
+authority_score(g)$vector          # HITS: authorities
+```
+
+> **Closeness en dirigidos:** usar `harmonic_centrality()` — penaliza correctamente nodos aislados (evita el "efecto isla").
+
+## Con `tidygraph` (dentro de `mutate`)
+
+```r
+mutate(
+  degree       = centrality_degree(),
+  betweenness  = centrality_betweenness(),
+  closeness    = centrality_closeness(),
+  pagerank     = centrality_pagerank(),
+  eigen        = centrality_eigen(),
+  edge_btw     = centrality_edge_betweenness()  # sobre aristas
+)
+```
+
+## Cuándo usar cada métrica
+
+| Métrica | Objetivo | Ejemplo de uso |
+|---|---|---|
+| **Degree** | Popularidad, actividad local | Influencers, nodos con alta carga |
+| **Betweenness** | Control de flujo, SPOF | Puntos únicos de fallo, gatekeepers |
+| **Closeness** | Rapidez de difusión | Dónde poner caché, vacunación |
+| **PageRank / Eigenvector** | Prestigio por calidad de vecinos | Líderes de opinión |
+| **HITS Hubs** | Nodos que apuntan a buenas autoridades | Medios/agregadores |
+| **HITS Authorities** | Nodos muy referenciados por buenos hubs | Productores de contenido |
+
+---
+
+# 7. Análisis Estructural Global
+
+```r
+diameter(g)                                    # camino más corto más largo
+shortest_paths(g, from = "1", to = "10")$vpath # ruta mínima
+edge_betweenness(g)                            # betweenness de aristas
+edge_density(g)                                # densidad (aristas / posibles)
+
+# Clustering (transitividad)
+transitivity(g, type = "global")               # C global
+transitivity(g, type = "local")                # C por nodo
+
+# nodos con C≈0 son brokers (agujeros estructurales)
+brokers <- which(transitivity(g, type = "local") < 0.1)
+```
+
+**Interpretación del clustering local:**
+
+- `C = 1` → clique perfecta (todos mis vecinos se conocen entre sí)  
+- `C ≈ 0` → agujero estructural (el nodo es el único puente entre grupos)
+
+---
+
+# 8. Detección de Comunidades
+
+## Algoritmos disponibles
+
+```r
+# igraph base
+cluster_edge_betweenness(g)    # elimina puentes progresivamente
+cluster_walktrap(g)            # random walks (caminante atrapado)
+cluster_fast_greedy(g)         # bottom-up, optimiza modularidad
+cluster_leading_eigen(g)       # top-down, vectores propios
+cluster_label_prop(g)          # propagación de etiquetas (muy rápido)
+cluster_louvain(g)             # Louvain — escalable, gran escala ✓
+
+# tidygraph (dentro de mutate)
+mutate(comunidad = group_louvain())
+mutate(comunidad = group_infomap())
+mutate(comunidad = group_edge_betweenness())
+mutate(comunidad = group_walktrap())
+mutate(comunidad = group_label_prop())
+```
+
+## Cuándo usar cada algoritmo
+
+| Algoritmo | Escala | Criterio de elección |
+|---|---|---|
+| **Louvain** | Grande | Velocidad + calidad general |
+| **Infomap** | Mediana | Flujos de información (teoría de la información) |
+| **Edge Betweenness** | Pequeña | Interpretabilidad, puentes explícitos |
+| **Label Propagation** | Muy grande | Máxima velocidad, grafos masivos |
+
+## Visualización rápida de comunidades
+
+```r
+comm <- cluster_louvain(g)
+plot(comm, g, main = "Comunidades")   # igraph base con colores automáticos
+```
+
+---
+
+# 9. Redes Egocéntricas
+
+```r
+# Ego-red de orden 1 (yo + mis contactos directos)
+ego(g, order = 1, nodes = 1)
+
+# Con tidygraph/morphing
+grafo_ego <- karate_tidy %>%
+  morph(to_local_neighborhood, node = 1, order = 2) %>%
+  mutate(es_vecino = TRUE) %>%
+  unmorph()
+```
+
+---
+
+# 10. Exportación
+
+```r
+write_graph(g, "red.graphml", format = "graphml")   # formato XML estándar
+```
+
+---
+
+# Referencia rápida de operadores `igraph`
+
+| Operador | Función |
+|---|---|
+| `V(g)` | Secuencia de vértices |
+| `E(g)` | Secuencia de aristas |
+| `V(g)[cond]` | Filtrar vértices por condición |
+| `E(g)[A %--% B]` | Aristas entre A y B (sin dir.) |
+| `E(g)[A %->% B]` | Aristas de A hacia B |
+| `E(g)[A %<-% B]` | Aristas de B hacia A |
+| `as_edgelist(g)` | Matriz (from, to) de aristas |
+| `which_mutual(g)` | Vector lógico de aristas mutuas |
+| `node_is_isolated()` | Nodos sin ninguna conexión (tidygraph) |

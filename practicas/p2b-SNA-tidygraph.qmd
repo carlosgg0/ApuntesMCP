@@ -59,6 +59,8 @@ aristas_vuelos <- data.frame(
 red_vuelos <- graph_from_data_frame(d = aristas_vuelos, 
                                     vertices = nodos_aeropuertos, 
                                     directed = TRUE) |> as_tbl_graph()
+
+print(red_vuelos)
 ```
 
 ## Ejercicio 2: Metadatos y Filtrado

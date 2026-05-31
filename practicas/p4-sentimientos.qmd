@@ -50,6 +50,7 @@ library(widyr)
 library(tidygraph)
 library(ggraph)
 library(ggforce)
+library(SnowballC)
 ```
 
 Paquete que pueden ser necesarios:
@@ -80,19 +81,12 @@ lexicon_esp <- tibble(
             -3, -3, -4, -3, -2,
             -1, -2, -3)
 )
-
- 
-
 ```
-
-
 
 ¿Cuántas palabras positivas y negativas tenemos?
 
 ```{r}
 #inserta tu código
-
-library(tidyverse)
 
 num_positivas <- lexicon_esp |> 
   filter(valor >= 0) |> 
@@ -111,25 +105,20 @@ num_negativas <- lexicon_esp |>
 
 ```{r}
 #inserta tu código 
-
 lexicon_esp
-
 mi_lexicon_esp <- tibble(
   word = c("progreso", "injusticia"),
   valor = c(3, -4)
 )
 lex <- rbind(lexicon_esp, mi_lexicon_esp)
-
-
+lex
 ```
 :::
-
 
 ## Paso 3: Los textos del debate
 
 ```{r}
 #| label: textos
-
 
 textos <- tibble(
   id    = 1:7,
@@ -151,9 +140,6 @@ textos |> select(id, bando, texto)
 ```
 
 
-
-
-
 ## Paso 4: Tokenización → la "palabra suelta"
 
 El primer paso del NLP es romper el texto en palabras individuales (**tokens**). Usa unnest_tokens y guarda resultado en variable `tokens`:
@@ -163,23 +149,21 @@ El primer paso del NLP es romper el texto en palabras individuales (**tokens**).
 #inserta tu código 
 
 tokens <- textos |> 
-  unnest_tokens(words, texto)
+  unnest_tokens(word, texto)
 
+tokens
 ```
 
 # Cuántas palabras genera cada frase
 
 ```{r}
 #inserta tu código 
-
 tokens |> 
   group_by(id) |> 
-  summarise(numero_palabras=n())
-
+  summarise(
+    numero_palabras=n()
+  )
 ```
-
-
-
 
 > Preprocesamiento Avanzado (Stemming y Stopwords)
 
@@ -196,24 +180,18 @@ data("stop_words")
 stop_words_es <- get_stopwords(language = "es")
 
 tokens_limpios <- tokens |>
-  anti_join(stop_words_es, by = c("word" = "word")) |>
+  anti_join(stop_words_es, by = "word") |>
   mutate(stem = wordStem(word, language = "spanish"))
 
 tokens_limpios |> 
   select(id, word, stem) |> 
-  slice_head(n = 5)
+  head(n = 5)
 ```
-
-
-
 
 ::: {.callout-tip}
 ## ¿Por qué usar Stemming?
 El stemming ayuda a que "propietario" y "propietarios" se cuenten como la misma unidad, reduciendo la dispersión del vocabulario.
 :::
-
-
-
 
 ## Paso 5: Calcular el sentimiento
 
@@ -224,28 +202,24 @@ Solo las palabras que **aparecen en el diccionario** contribuyen a la puntuació
 Guarda en una variable llamada `resultado` el sentimiento de cada texto.
 
 ```{r}
-#inserta tu código 
-
-lexicon_esp
-
-tokens |> 
+resultado <- tokens |> 
   inner_join(lexicon_esp, by = "word") |> 
   group_by(id) |> 
-  summarise(sentimiento=sum(valor))
-
-tokens
+  summarise(
+    sentimiento = sum(valor)
+  )
+resultado
 ```
 
 Calcula el sentimiento de cada bando. Guarda en una variable llamada `resultado_bando` el sentimiento de cada texto. :
 
 ```{r}
-#inserta tu código 
-
-resultado_bando <- mi_tokens |>
+resultado_bando <- tokens |> 
   inner_join(lexicon_esp, by = "word") |> 
   group_by(bando) |> 
-  summarise(sentimiento = sum(valor))
-
+  summarise(
+    sentimiento = sum(valor)
+  )
 resultado_bando
 ```
 
@@ -258,15 +232,10 @@ Con `resultado` queremos:
 -   usa ggplot + geom_col
 
 ```{r}
-#inserta tu código 
-
-resultado |> 
-  ggplot(aes(x = id, y = sentimiento, fill = sentimiento > 0)) + 
+resultado |> ggplot(aes(x = id, y = sentimiento, fill = sentimiento > 0)) +
   geom_col() +
   geom_text(aes(label=sentimiento))
-
 ```
-
 
 ## Paso 6: Red Semántica — ¿Qué palabras "van juntas"?
 
@@ -285,10 +254,14 @@ Ahora construimos una **red de palabras** donde dos palabras están conectadas s
 ```{r}
 #inserta tu código 
 
-word_cors <- mi_tokens |> 
+word_cors <- tokens |>
+  filter(nchar(word) > 3) |> 
+  anti_join(stop_words_es, by = "word") |> 
   group_by(word) |> 
-  filter(n() >= 20) |> 
-  pairwise_cor(term, document, sort >= TRUE)
+  filter(n() >= 2) |> 
+  pairwise_cor(item = word, feature = id, sort = TRUE)
+
+word_cors
 ```
 
 Creamos la red semantica entre las palabras (mira material de book).
@@ -302,7 +275,26 @@ Creamos la red semantica entre las palabras (mira material de book).
 -   dibuja el grado
 
 ```{r}
- 
+library(tidygraph)
+library(igraph)
+library(ggraph)
+
+red_semantica <- word_cors |> 
+  filter(correlation > 0) |> 
+  as_tbl_graph(directed = FALSE) |> 
+  activate(nodes) |> 
+  mutate(
+    comunidad = group_louvain() 
+  )
+
+set.seed(123)
+
+ggraph(red_semantica, layout = "fr") +
+  geom_mark_hull(aes(x, y, group = comunidad, fill = comunidad),
+                 alpha = 0.15, color = NA, expand = unit(3, "mm")) +
+  geom_edge_link(aes(edge_alpha = correlation)) +
+  geom_node_point(aes(color = comunidad), size = 4) +
+  geom_node_text(aes(label = name), repel = TRUE)
 
 ```
 
@@ -320,6 +312,7 @@ El ecosistema `quanteda` (Exploración de Corpus)
 
 ```{r}
 #| label: quanteda-corpus
+library(quanteda)
 
 # Crear objeto corpus
 mi_corpus <- corpus(textos, text_field = "texto")
@@ -413,7 +406,7 @@ Recolección de Datos en Redes Sociales: X, reddit
 
 X requiere una cuenta de desarrollador y una API Key. Una vez configurada:
 
-```r
+```{r}
 library(rtweet)
 
 # 1. Autenticación (se abre ventana en navegador)

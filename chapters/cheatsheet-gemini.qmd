@@ -1,0 +1,126 @@
+---
+title: "Cheat-Sheet: Análisis de Redes Sociales (SNA) en R"
+format: html
+editor: visual
+---
+
+## 1. Construcción y Generación de Grafos (`igraph`)
+
+La librería `igraph` permite construir redes desde múltiples estructuras de datos base.
+
+* **Desde Matriz de Adyacencia:** `graph.adjacency(matriz, mode="undirected")`.
+* **Desde Lista de Aristas (Dataframe):** `graph_from_data_frame(df, directed=FALSE)`.
+* **Generación Manual:** `make_graph(edges = c(1,2, 2,3), directed = FALSE)`.
+* **Grafos Famosos:** `make_graph("Zachary")`.
+* **Generadores Sintéticos:**
+    * **Erdős-Rényi (Aleatorio):** `sample_gnp(n, p, directed = FALSE)`.
+    * **Barabási-Albert (Libre de escala/Hubs):** `sample_pa(n, power, m, directed = FALSE)`.
+    * **Canónicos:** `make_tree()`, `make_full_graph()`, `make_lattice()`, `make_star()`.
+
+---
+
+## 2. El Ecosistema `tidygraph`
+
+`tidygraph` trata la red como dos tablas vinculadas (nodos y aristas), permitiendo el uso de verbos de `dplyr`.
+
+### Manipulación Básica
+* **Conversión:** `as_tbl_graph(grafo_igraph)`.
+* **Activación:** `activate(nodes)` o `activate(edges)` define sobre qué tabla operan los verbos siguientes.
+* **Mutaciones y Filtros:** `mutate()`, `filter(!node_is_isolated())`.
+* **Pronombre `.N()`:** Permite acceder a la tabla de nodos desde la tabla de aristas, ej: `.N()$atributo[from]`.
+* **Edición Estructural:** `bind_nodes()`, `bind_edges()`, `graph_join(by="name")`, `reroute(from=X, to=Y)`.
+
+### Vistas Temporales (Morphing)
+Permite aislar subconjuntos, operar sobre ellos y consolidar resultados. Esquema básico: `morph() %>% mutate() %>% unmorph()`.
+
+| Función `morph()` | Aplicación Práctica |
+| :--- | :--- |
+| `to_shortest_path(from, to)` | Identificación de rutas críticas y mediadores. |
+| `to_local_neighborhood(node, order)` | Resaltar Ego-red (nodo y vecinos directos). |
+| `to_contracted(Atributo)` | Colapsar nodos en macro-grupos (contracción). |
+| `to_minimum_spanning_tree()` | Esqueleto de conectividad mínima sin redundancias. |
+| `to_components()` | Separar en subgrafos inconexos (usar con `crystallise()`). |
+
+---
+
+## 3. Métricas Estructurales y Centralidad
+
+Los métodos en `tidygraph` suelen utilizar el prefijo `centrality_*` para calcularse dinámicamente dentro de un `mutate()`.
+
+| Métrica (`igraph` / `tidygraph`) | Objetivo Analítico y Descripción |
+| :--- | :--- |
+| `degree()` / `centrality_degree()` | **Popularidad/Actividad:** Número de conexiones directas. Útil para detectar hubs inmediatos. |
+| `betweenness()` / `centrality_betweenness()` | **Control/SPOF:** Veces que un nodo actúa como puente en el camino más corto entre otros dos. Nodos críticos para el flujo. |
+| `closeness()` / `centrality_closeness()` | **Eficiencia/Rapidez:** Inverso de la suma de las distancias. Útil para ubicar recursos óptimos. |
+| `harmonic_centrality()` | **Cercanía (Redes Dirigidas):** Corrige el aislamiento sumando inversas de distancias en lugar de la inversa de la suma. |
+| `eigen_centrality()` / `centrality_eigen()` | **Prestigio:** Puntúa más alto a quienes se conectan con otros nodos importantes. |
+| `hits_scores()` | **Hubs y Authorities:** En redes dirigidas, separa nodos referentes (Authorities) de aquellos que los enlazan (Hubs). |
+| `edge_betweenness()` | **Cuellos de Botella:** Identifica aristas que son puentes críticos. |
+| `transitivity()` | **Clustering:** Proporción de triángulos cerrados (probabilidad de que los amigos de mis amigos sean mis amigos). Valores bajos indican "brokers". |
+
+---
+
+## 4. Detección de Comunidades
+
+Algoritmos para dividir la red en grupos densamente conectados. En `tidygraph` se ejecutan dentro de `mutate()` con el prefijo `group_*`.
+
+| Algoritmo (`igraph`) | Enfoque | Características |
+| :--- | :--- | :--- |
+| `cluster_louvain()` / `group_louvain()` | Jerarquía / Multilevel | Muy rápido y pragmático para redes modernas a gran escala. |
+| `cluster_infomap()` / `group_infomap()` | Caminos Aleatorios | Superior para rastrear circulación de ideas basado en teoría de la información. |
+| `cluster_edge_betweenness()` | Cuellos de Botella | Elimina aristas puente progresivamente para fragmentar la red. |
+| `cluster_fast_greedy()` | Aglomeración | Iterativo *bottom-up* fusionando nodos para optimizar modularidad. |
+| `cluster_label_prop()` | Votación | Nodos adoptan la etiqueta de la mayoría de sus vecinos. Extremadamente rápido. |
+
+---
+
+## 5. Visualización: `igraph` Clásico
+
+El ploteo clásico usa el operador `$` para metadatos y modificadores lógicos.
+
+### Sintaxis Básica y Atributos
+```{r}
+#| eval: false
+
+# Atributos de vértices (Nodos)
+V(g)$color <- "lightblue"
+V(g)[condicion]$size <- 20 # Mapeo condicional
+
+# Atributos de aristas (Edges)
+E(g)$width <- E(g)$weight * 0.5
+# Operadores de selección de aristas: %--% (bidireccional), %->% (origen a destino)
+E(g)[V(g)[condicion_A] %--% V(g)[condicion_B]]$color <- "red"
+
+# Visualización base
+plot(g, layout = layout_with_kk, vertex.label.cex = 0.8, edge.arrow.size = 0)
+
+# Marcar comunidades
+plot(g, 
+     mark.groups = list(grupo1 = c(1,2,3), grupo2 = c(4,5,6)), 
+     mark.col = c(rgb(0,0,1,0.5), rgb(1,0,0,0.5)))
+```
+
+## 6. Visualización Declarativa: `ggraph`
+
+### Layouts principales
+
+- `stress`, `fr`, `circle`, `tree`
+
+```{r}
+#| eval: false
+
+library(ggraph)
+library(tidygraph)
+library(ggforce) # Para geom_mark_hull
+
+ggraph(grafo_tidy, layout = "stress") +
+  # CAPA ARISTAS:
+  geom_edge_link(alpha = 0.2, color = "gray70") + 
+  # CAPA NODOS (Con NSE para calcular tamaño en tiempo real):
+  geom_node_point(aes(size = centrality_degree(), color = as.factor(comunidad))) +
+  # ETIQUETAS Y TEMAS:
+  geom_node_text(aes(label = name), check_overlap = TRUE) +
+  theme_graph()
+
+```
+
